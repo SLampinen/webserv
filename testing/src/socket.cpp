@@ -2,16 +2,16 @@
 
 listeningSocket::listeningSocket()
 {
-	this->port = DEFAULT;
+	this->port = DEFAULTPORT;
 	int addrLen = sizeof(address);
 	if ((serverFd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
 	{
-		std::cout << "ERROR, socket failed" << std::endl;
+		std::cout << "ERROR, " << strerror(errno) << std::endl;
 		return ;
 	}
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons(DEFAULT);
+	address.sin_port = htons(DEFAULTPORT);
 	memset(address.sin_zero, '\0', sizeof(address.sin_zero));
 
 	const int enable = 1;
@@ -19,12 +19,12 @@ listeningSocket::listeningSocket()
 
 	if (bind(serverFd, (struct sockaddr*)&address, sizeof(address)) < 0)
 	{
-		std::cout << "ERROR, socket failed" << std::endl;
+		std::cout << "ERROR, " << strerror(errno) << std::endl;
 		return ;
 	}
 	if (listen(serverFd, 10) < 0)
 	{
-		std::cout << "ERROR, listen failed" << std::endl;
+		std::cout << "ERROR, " << strerror(errno) << std::endl;
 		return ;
 	}
 
@@ -36,7 +36,7 @@ listeningSocket::listeningSocket(int portNum)
 	int addrLen = sizeof(address);
 	if ((serverFd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
 	{
-		std::cout << "ERROR, socket failed" << std::endl;
+		std::cout << "ERROR, " << strerror(errno) << std::endl;
 		return ;
 	}
 	address.sin_family = AF_INET;
@@ -49,12 +49,12 @@ listeningSocket::listeningSocket(int portNum)
 
 	if (bind(serverFd, (struct sockaddr*)&address, sizeof(address)) < 0)
 	{
-		std::cout << "ERROR, socket failed" << std::endl;
+		std::cout << "ERROR, " << strerror(errno) << std::endl;
 		return ;
 	}
 	if (listen(serverFd, 10) < 0)
 	{
-		std::cout << "ERROR, listen failed" << std::endl;
+		std::cout << "ERROR, " << strerror(errno) << std::endl;
 		return ;
 	}
 
@@ -64,6 +64,27 @@ listeningSocket::~listeningSocket()
 {
 	std::cout << "Deleting socket" << std::endl;
 }
+
+listeningSocket::listeningSocket(const listeningSocket &var)
+{
+	this->serverFd = var.serverFd;
+	this->address = var.address;
+	this->port = var.port;
+	this->newSocket = var.newSocket;
+}
+
+listeningSocket &listeningSocket::operator=(const listeningSocket &var)
+{
+	if (this != &var)
+	{
+		this->serverFd = var.serverFd;
+		this->address = var.address;
+		this->port = var.port;
+		this->newSocket = var.newSocket;
+	}
+	return (*this);
+}
+
 
 int listeningSocket::getPortNum()
 {

@@ -12,5 +12,6 @@
 # include <vector>
 # include <sstream>
 # include <fstream>
+# include <time.h>
 
 #endif

@@ -2,13 +2,33 @@
 
 Server::Server()
 {
-	
+	this->servName = DEFAULTSERVNAME;
+	this->port = DEFAULTPORT;
 }
 
 Server::~Server()
 {
 	std::cout << "Deleting server" << std::endl;
 }
+
+Server::Server(const Server &var)
+{
+	this->port = var.port;
+	this->servName = var.servName;
+	this->lSocket = var.lSocket;
+}
+
+Server &Server::operator=(const Server &var)
+{
+	if (this !=  &var)
+	{
+		this->port = var.port;
+		this->servName = var.servName;
+		this->lSocket = var.lSocket;
+	}
+	return (*this);
+}
+
 const char *Server::getMIMEType(const char *fileExt) {
     if (strcasecmp(fileExt, ".html") == 0 || strcasecmp(fileExt, ".htm") == 0) {
         return "text/html";
@@ -28,12 +48,11 @@ void Server::readConfig(std::string fileName)
 	std::fstream configFile;
 	int start, end;
 	std::string wip;
-	std::string name;
 
 	configFile.open(fileName);
 	if (!configFile.good())
 	{
-		std::cout << "ERROR, open file failed" << std::endl;
+		std::cout << "ERROR, " << strerror(errno) << std::endl;
 		return ;
 	}
 	std::string line;
@@ -43,14 +62,21 @@ void Server::readConfig(std::string fileName)
 		// std::cout << line << std::endl;
 		if (!line.compare("\0") || configFile.eof())
 			break;
+		// removes comments in config file
+		if (line.find("#") != std::string::npos)
+		{
+			end = line.find("#");
+			line = line.substr(0, end);
+		}
+		// sets port if config file has one
 		if (line.find("listen") != std::string::npos)
 		{
 			start = line.find("listen ") + 7;
 			wip = line.substr(start);
 			end = wip.find_first_not_of("0123456789");
 			wip = wip.substr(0, end);
-			port = std::stoi(wip);
-			std::cout << "port = " << port << std::endl;
+			if (!wip.empty())
+				port = std::stoi(wip);
 		}
 		if (line.find("server_name") != std::string::npos)
 		{
@@ -58,17 +84,19 @@ void Server::readConfig(std::string fileName)
 			wip = line.substr(start);
 			end = wip.find(";");
 			wip = wip.substr(0, end);
-			name = wip;
+			if (wip != servName)
+			{
+				servName = wip;
+			}
 		}
 	}
-
 }
 
 void Server::buildHTTPResponse(const char *fileName, const char *fileExt, char *response, size_t *responseLen)
 {
 	const char *mimeType = getMIMEType(fileExt);
 	char *header = (char *)malloc(BUFFERSIZE * sizeof(char));
-	// all works
+	//if all works
 	snprintf(header, BUFFERSIZE, 
 			"HTTP/1.1 200 OK\r\n"
 			"Content-Type: %s\r\n"
@@ -125,9 +153,32 @@ void Server::makeSocket()
 	}
 }
 
+void Server::log(std::string text)
+{
+	std::ofstream logfile;
+	logfile.open("logfile.txt", std::ofstream::app);
+	if (logfile.is_open() == 0)
+	{
+		std::cout << "Failed to open logfile.txt" << std::endl;
+		return ;
+	}
+	time_t rawtime;
+	struct tm *timeinfo;
+	char timeBuffer[80];
+	time (&rawtime);
+	timeinfo = localtime(&rawtime);
+	strftime(timeBuffer, 80, "%T %d:%m:%Y", timeinfo);
+	logfile << "----------------------------------------------------------------------------------------------------" << std::endl;
+	logfile << "New entry in log, at time : " << timeBuffer << std::endl;
+	logfile << text;
+	logfile << std::endl << std::endl;
+	logfile.close();
+}
+
 void Server::launch(std::string configFile)
 {
 	readConfig(configFile);
+	std::cout << "server name = " << servName << std::endl;
 	makeSocket();
 	struct sockaddr_in newAddress;
 	newAddress = this->lSocket.getAddress();
@@ -138,7 +189,7 @@ void Server::launch(std::string configFile)
 	{
 		if ((newSocket = accept(this->lSocket.getServerFd(), (struct sockaddr *)&newAddress, (socklen_t *)&addrLen)) < 0)
 		{
-			std::cout << "ERROR, accpet failed" << std::endl;
+			std::cout << "ERROR, " << strerror(errno) << std::endl;
 			return ;
 		}
 		std::vector<char> buffer(100);
@@ -149,7 +200,7 @@ void Server::launch(std::string configFile)
 			valread = recv(newSocket, &buffer[0], buffer.size(), 0);
 			if (valread == -1)
 				{
-					std::cout << "ERROR with receving data" << std::endl;
+					std::cout << "ERROR, " << strerror(errno) << std::endl;
 					return ;
 				}
 			else
@@ -157,7 +208,8 @@ void Server::launch(std::string configFile)
 				received.append(buffer.cbegin(), buffer.cend());
 			}
 		} while (valread == 100);
-		std::cout << received << std::endl;
+		// std::cout << received << std::endl;
+		log(received);
 	if (received.find("GET") != std::string::npos)
 	{
 		std::cout << "getting " << std::endl;
