@@ -2,8 +2,10 @@
 
 Server::Server()
 {
+	this->numPorts = 0;
 	this->servName = DEFAULTSERVNAME;
-	this->port = DEFAULTPORT;
+	// this->port = DEFAULTPORT;
+	this->ports.push_back(DEFAULTPORT);
 	this->error404Dir = DEFAULT404DIR;
 	std::string response;
 	size_t responseLen;
@@ -16,7 +18,9 @@ Server::~Server()
 
 Server::Server(const Server &var)
 {
-	this->port = var.port;
+	this->numPorts = var.numPorts;
+	this->ports = var.ports;
+	// this->port = var.port;
 	this->servName = var.servName;
 	this->lSocket = var.lSocket;
 	this->response = var.response;
@@ -27,7 +31,9 @@ Server &Server::operator=(const Server &var)
 {
 	if (this !=  &var)
 	{
-		this->port = var.port;
+		this->numPorts = var.numPorts;
+		this->ports = var.ports;
+		// this->port = var.port;
 		this->servName = var.servName;
 		this->lSocket = var.lSocket;
 		this->response = var.response;
@@ -83,7 +89,20 @@ int Server::readConfig(std::string fileName)
 			end = wip.find_first_not_of("0123456789");
 			wip = wip.substr(0, end);
 			if (!wip.empty())
-				port = std::stoi(wip);
+			{
+				int i;
+				// port = std::stoi(wip);
+				for (i = 0; i < numPorts; i++)
+				{
+					if (ports.at(i) == std::stoi(wip))
+						break ;
+				}
+				if (i == numPorts)
+				{
+					ports.push_back(std::stoi(wip));
+					numPorts++;
+				}
+			}
 		}
 		if (line.find("server_name") != std::string::npos)
 		{
@@ -167,7 +186,8 @@ void Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	response.append(buffer);
 }
 
-void Server::makeSocket()
+//todo: change this
+void Server::makeSocket(int port)
 {
 	if (this->lSocket.getPortNum() != port)
 	{
@@ -197,12 +217,19 @@ void Server::log(std::string text)
 	logfile.close();
 }
 
+// TODO: change accept to poll( or equivalent)
+
 void Server::launch(std::string configFile)
 {
 	if (readConfig(configFile) == 0)
 		return ;
 	std::cout << "server name = " << servName << std::endl;
-	makeSocket();
+	std::cout << "num of ports = " << numPorts << std::endl;
+	for (int i = 0; i < numPorts; i++)
+	{
+		makeSocket(ports.at(i));
+	}
+	
 	struct sockaddr_in newAddress;
 	newAddress = this->lSocket.getAddress();
 	int addrLen = sizeof(newAddress);

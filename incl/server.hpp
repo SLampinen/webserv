@@ -10,7 +10,9 @@
 class Server
 {
 private:
-	int port;
+	// int port;
+	int numPorts;
+	std::vector<int> ports;
 	std::string servName;
 	std::string rootDir;
 	std::string response;
@@ -20,11 +22,12 @@ public:
 	~Server();
 	Server(const Server &var);
 	Server& operator=(const Server &var);
+	// change away from single socket to multiple
 	listeningSocket lSocket;
 	void launch(std::string configFile);
 	std::string getMIMEType(std::string fileExt);
 	int readConfig(std::string fileName);
-	void makeSocket();
+	void makeSocket(int port);
 	void buildHTTPResponse(std::string fileName, std::string fileExt);
 	void log(std::string text);
 };
