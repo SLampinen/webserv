@@ -1,143 +1,240 @@
+#include "../incl/server.hpp"
 
-#include "../incl/webserv.hpp"
-#define PORT 4242
-#define BUFFER_SIZE 104857600 //100 megabytes
-
-void error(const char *msg)
+Server::Server()
 {
-    perror(msg);
-    exit(1);
+	this->servName = DEFAULTSERVNAME;
+	this->port = DEFAULTPORT;
+	std::string response;
+	size_t responseLen;
 }
 
-const char *getMIMEType(const char *fileExt) {
-    if (strcasecmp(fileExt, ".html") == 0 || strcasecmp(fileExt, ".htm") == 0) {
+Server::~Server()
+{
+	std::cout << "Deleting server" << std::endl;
+}
+
+Server::Server(const Server &var)
+{
+	this->port = var.port;
+	this->servName = var.servName;
+	this->lSocket = var.lSocket;
+	this->response = var.response;
+	// this->responseLen = var.responseLen;
+}
+
+Server &Server::operator=(const Server &var)
+{
+	if (this !=  &var)
+	{
+		this->port = var.port;
+		this->servName = var.servName;
+		this->lSocket = var.lSocket;
+		this->response = var.response;
+		// this->responseLen = var.responseLen;
+	}
+	return (*this);
+}
+
+std::string Server::getMIMEType(std::string fileExt) {
+    if (fileExt.compare(".html") == 0 || fileExt.compare(".htm") == 0) {
         return "text/html";
-    } else if (strcasecmp(fileExt, ".txt") == 0) {
+    } else if (fileExt.compare(".txt") == 0) {
         return "text/plain";
-    } else if (strcasecmp(fileExt, ".jpg") == 0 || strcasecmp(fileExt, ".jpeg") == 0) {
+    } else if (fileExt.compare(".jpg") == 0 || fileExt.compare(".jpeg") == 0) {
         return "image/jpeg";
-    } else if (strcasecmp(fileExt, ".png") == 0) {
+    } else if (fileExt.compare(".png") == 0) {
         return "image/png";
     } else {
         return "application/octet-stream";
     }
 }
 
-void buildHTTPResponse(const char *fileName, const char *fileExt, char *response, size_t *responseLen)
+void Server::readConfig(std::string fileName)
 {
-	// std::cout << "at bhttpr file name = " << fileName << " and fileExt = " << fileExt << std::endl;
-	const char *mimeType = getMIMEType(fileExt);
-	char *header = (char *)malloc(BUFFER_SIZE * sizeof(char));
-	snprintf(header, BUFFER_SIZE, 
-			"HTTP/1.1 200 OK\r\n"
-			"Content-Type: %s\r\n"
-			"\r\n",
-			mimeType);
+	std::fstream configFile;
+	int start, end;
+	std::string wip;
 
-	// std::cout << strcmp(fileName, "") << std::endl;
-	if (strcmp(fileName, "") == 0)
+	configFile.open(fileName);
+	if (!configFile.good())
 	{
-		// std::cout << "empty" << std::endl;
+		std::cout << "ERROR, " << strerror(errno) << std::endl;
+		return ;
+	}
+	std::string line;
+	while(1)
+	{
+		std::getline(configFile, line);
+		// std::cout << line << std::endl;
+		if (!line.compare("\0") || configFile.eof())
+			break;
+		// removes comments in config file
+		if (line.find("#") != std::string::npos)
 		{
-		snprintf(response, BUFFER_SIZE, "HTTP/1.1 200 OK\r\n"
-                 "Content-Type: text/plain\r\n"
-                 "\r\n"
-                 "Starting page, only file.txt exists");
-		*responseLen = strlen(response);
+			end = line.find("#");
+			line = line.substr(0, end);
 		}
-		free(header);
-		return ;
+		// sets port if config file has one
+		if (line.find("listen") != std::string::npos)
+		{
+			start = line.find("listen ") + 7;
+			wip = line.substr(start);
+			end = wip.find_first_not_of("0123456789");
+			wip = wip.substr(0, end);
+			if (!wip.empty())
+				port = std::stoi(wip);
+		}
+		if (line.find("server_name") != std::string::npos)
+		{
+			start = line.find("server_name ") + 12;
+			wip = line.substr(start);
+			end = wip.find(";");
+			wip = wip.substr(0, end);
+			if (wip != servName)
+			{
+				servName = wip;
+			}
+		}
+		if (line.find("root") != std::string::npos)
+		{
+			start = line.find("root ") + 5;
+			wip = line.substr(start);
+			end = wip.find(";");
+			wip = wip.substr(0, end);
+			rootDir = wip;
+		}
 	}
-	char *fileFull = (char *)malloc(sizeof(char) * (strlen(fileName) + strlen(fileExt) + 1));
-	strcpy(fileFull, fileName);
-	strcpy(fileFull + strlen(fileName), fileExt);
-	// std::cout << "full name of file = " << fileFull << std::endl;
-	int fileFd = open(fileFull, O_RDONLY);
-	if (fileFd == -1)
-	{
-		snprintf(response, BUFFER_SIZE, "HTTP/1.1 404 Not Found\r\n"
-                 "Content-Type: text/plain\r\n"
-                 "\r\n"
-                 "Page you were looking for does not exist, nor should it ever exist");
-		*responseLen = strlen(response);
-		free(header);
-		free(fileFull);
-		return ;
-	}
-	*responseLen = 0;
-	memcpy(response, header, strlen(header));
-	*responseLen = strlen(header);
-	ssize_t bytesRead;
-	while ((bytesRead = read(fileFd, response + *responseLen, BUFFER_SIZE - *responseLen)) > 0)
-	{
-		*responseLen += bytesRead;
-	}
-	free(fileFull);
-	free(header);
 }
 
-/*void handleClient(int clientFd)
+void Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 {
-	char buffer[10000] = {0};
-	long valread;
-	valread = recv(clientFd, buffer, sizeof(buffer), 0);
-		std::cout << buffer << std::endl;
-	if (strncmp(buffer, "GET", 3) == 0)
-	{
-		// std::cout << "get something" << std::endl;
-		int start, end;
-		for (start = 0; ; start++)
-		{
-			if (buffer[start] == '/')
-			{
-				start++;
-				break;
-			}
-		}
-		for (end = start; ; end++)
-		{
-			if (buffer[end] == ' ' || buffer[end] == '\r')
-			{
-				break;
-			}
-		}
-		// std::cout << "start = " << start << " , end = " << end << std::endl;
-		// std::cout << buffer[start] << " and " << buffer[end] << std::endl;
-		char *fileName = (char *)malloc(1000 * sizeof(char));
-		strncpy(fileName, buffer + start, end - start);
-		// std::cout << fileName << std::endl;
-		char *response = (char *)malloc(1000 * sizeof(char));
-		size_t responseLen;
-		buildHTTPResponse(fileName , "txt", response, &responseLen);
-		send(clientFd, response, responseLen, 0);
-		free(response);
-	}
-}*/
+	std::string mimeType = getMIMEType(fileExt);
+	std::cout << "file name = " << fileName << std::endl;
+	std::string header;
+	std::string buffer;
+	std::stringstream headerStream;
+	std::stringstream resonseStream;
 
-void handleClient(int clientFd)
-{
-	std::vector<char> buffer(100);
-	std::string received;
-	long valread;
-	do
+	// if empty, aka front page
+	if (fileName.empty())
 	{
-		valread = recv(clientFd, &buffer[0], buffer.size(), 0);
-		if (valread == -1)
-			error("ERROR with receving data");
-		else
+		resonseStream << "HTTP/1.1 200 OK\r\n" << "Content-Type: text/plain\r\n" << "\r\n" << "Front page";
+		response = resonseStream.str();
+		return ;
+	}
+
+	// if some other page
+	std::string fileFull;
+	fileFull.append(rootDir);
+	// std::cout << fileFull << std::endl;
+	fileFull.append(fileName);
+	// std::cout << fileFull << std::endl;
+	fileFull.append(fileExt);
+	// std::cout << fileFull << std::endl;
+	int fileFd = open(fileFull.data(), O_RDONLY);
+	std::ifstream file(fileFull);
+	// if (fileFd == -1)
+	if (file.is_open() == 0)
+	{
+		std::string errorDir;
+		errorDir.append(rootDir);
+		errorDir.append("error/404.html");
+		std::ifstream errormsg(errorDir);
+		if (errormsg.is_open() == 0)
 		{
-			received.append(buffer.cbegin(), buffer.cend());
+			resonseStream << "HTTP/1.1 404 Not Found\r\n" << "Content-Type: text/plain\r\n" << "\r\n" << "Page you were looking for does not exist, nor should it ever exist";
+			response = resonseStream.str();
+			return ;
 		}
-	} while (valread == 100);
-	// std::cout << received << std::endl;
+		headerStream << "HTTP/1.1 404 Not Found\r\n" << "Content-Type: text/plain\r\n" << "\r\n";
+		header = headerStream.str();
+		response.append(header);
+		std::getline(errormsg, buffer, '\0');
+		response.append(buffer);
+		return ;
+	}
+	headerStream << "HTTP/1.1 200 OK\r\n" << "Content-Type: " << mimeType << "\r\n" << "\r\n";
+	header = headerStream.str();
+	std::cout << "is open" << std::endl;
+	response.append(header);
+	std::getline(file, buffer, '\0');
+	response.append(buffer);
+}
+
+void Server::makeSocket()
+{
+	if (this->lSocket.getPortNum() != port)
+	{
+		this->lSocket = listeningSocket(port);
+	}
+}
+
+void Server::log(std::string text)
+{
+	std::ofstream logfile;
+	logfile.open("logfile.txt", std::ofstream::app);
+	if (logfile.is_open() == 0)
+	{
+		std::cout << "Failed to open logfile.txt" << std::endl;
+		return ;
+	}
+	time_t rawtime;
+	struct tm *timeinfo;
+	char timeBuffer[80];
+	time (&rawtime);
+	timeinfo = localtime(&rawtime);
+	strftime(timeBuffer, 80, "%T %d:%m:%Y", timeinfo);
+	logfile << "----------------------------------------------------------------------------------------------------" << std::endl;
+	logfile << "New entry in log, at time " << timeBuffer << ":" << std::endl;
+	logfile << text;
+	logfile << std::endl << std::endl;
+	logfile.close();
+}
+
+void Server::launch(std::string configFile)
+{
+	readConfig(configFile);
+	std::cout << "server name = " << servName << std::endl;
+	makeSocket();
+	struct sockaddr_in newAddress;
+	newAddress = this->lSocket.getAddress();
+	int addrLen = sizeof(newAddress);
+
+	int newSocket;
+	while (1)
+	{
+		if ((newSocket = accept(this->lSocket.getServerFd(), (struct sockaddr *)&newAddress, (socklen_t *)&addrLen)) < 0)
+		{
+			std::cout << "ERROR, " << strerror(errno) << std::endl;
+			return ;
+		}
+		std::vector<char> buffer(100);
+		std::string received;
+		long valread;
+		do
+		{
+			valread = recv(newSocket, &buffer[0], buffer.size(), 0);
+			if (valread == -1)
+				{
+					std::cout << "ERROR, " << strerror(errno) << std::endl;
+					return ;
+				}
+			else
+			{
+				received.append(buffer.cbegin(), buffer.cend());
+			}
+		} while (valread == 100);
+		// std::cout << received << std::endl;
+		log(received);
 	if (received.find("GET") != std::string::npos)
 	{
+		// std::cout << "getting " << std::endl;
 		size_t start = received.find('/');
 		size_t end = received.find(' ', start);
 		// std::cout << "e - s = " << end - start << std::endl;
 		std::string file = received.substr(start + 1, end - start - 1);
 		// std::cout << file << std::endl;
-		std::string fileExt = "html";
+		std::string fileExt = ".html";
 		std::string fileName;
 		if (file.find('.') != std::string::npos)
 		{
@@ -146,71 +243,17 @@ void handleClient(int clientFd)
 		}
 		else
 			fileName = file;
-		std::cout << "name = " << fileName << " and ext = " << fileExt << std::endl;
-		
-
-		//testing c++
-		// std::vector<char> response;
-		// size_t responseLen;
-		// buildHTTPResponse(fileName.data(), fileExt.data(), response, &responseLen);
-
-		//working c code
-		char *response = (char *)malloc(BUFFER_SIZE * sizeof(char));
-		size_t responseLen;
-		buildHTTPResponse(fileName.data(), fileExt.data(), response, &responseLen);
-
-
-
-		send(clientFd, response, responseLen, 0);
-		// free(response);
-	}
-}
-
-int main(int argc, char **argv)
-{
-	int serverFd;
-	int newSocket;
-	struct sockaddr_in address;
-	int addrlen = sizeof(address);
-
-	if ((serverFd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
-	{
-		error("ERROR, socket failed");
-	}
-	address.sin_family = AF_INET;
-	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons(PORT);
-
-	memset(address.sin_zero, '\0', sizeof(address.sin_zero));
-
-	//To avoid socket already in use error
-	const int enable = 1;
-	setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
-
-	if (bind(serverFd, (struct sockaddr*)&address, sizeof(address)) < 0)
-	{
-		error("ERROR, bind failed");
-	}
-
-	if (listen(serverFd, 10) < 0)
-	{
-		error("ERROR, listen failed");
-	}
-
-	// std::string hello = "Hello world\n";
-	while (1)
-	{
-		std::cout << "Waiting for connection" << std::endl;
-
-		if ((newSocket = accept(serverFd, (struct sockaddr*)&address, (socklen_t *)&addrlen)) < 0)
+		// std::cout << "name = " << fileName << " and ext = " << fileExt << std::endl;
+		if (fileExt.compare(".php") == 0)
 		{
-			error("ERROR, accept failed");
+			// do CGI 
 		}
-		// std::cout << "from port " << ntohs(address.sin_port) << std::endl;
-		handleClient(newSocket);
-		// write(newSocket, hello.data(), hello.size());
-		// std::cout << "Sent hello message" << std::endl;
+		else
+			buildHTTPResponse(fileName, fileExt);
+		// std::cout << "response is :" << std::endl << response << std::endl;
+		send(newSocket, response.data(), response.length(), 0);
+		response.clear();
+	}
 		close(newSocket);
 	}
-	return 0;
 }

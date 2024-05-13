@@ -13,5 +13,7 @@
 # include <sstream>
 # include <fstream>
 # include <time.h>
+# include <iomanip>
+# include <fstream>
 
 #endif

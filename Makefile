@@ -6,9 +6,9 @@ RM = rm -rf
 
 # INCLUDES = -I includes -I libft/includes
 
-HEADERS	= incl/webserv.hpp
+HEADERS	= incl/server.hpp incl/socket.hpp 
 
-SRCS = src/server.cpp
+SRCS = src/server.cpp src/socket.cpp main.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 
