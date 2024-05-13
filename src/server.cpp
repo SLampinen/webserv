@@ -4,6 +4,7 @@ Server::Server()
 {
 	this->servName = DEFAULTSERVNAME;
 	this->port = DEFAULTPORT;
+	this->error404Dir = DEFAULT404DIR;
 	std::string response;
 	size_t responseLen;
 }
@@ -19,7 +20,7 @@ Server::Server(const Server &var)
 	this->servName = var.servName;
 	this->lSocket = var.lSocket;
 	this->response = var.response;
-	// this->responseLen = var.responseLen;
+	this->error404Dir = var.error404Dir;
 }
 
 Server &Server::operator=(const Server &var)
@@ -30,7 +31,7 @@ Server &Server::operator=(const Server &var)
 		this->servName = var.servName;
 		this->lSocket = var.lSocket;
 		this->response = var.response;
-		// this->responseLen = var.responseLen;
+		this->error404Dir = var.error404Dir;
 	}
 	return (*this);
 }
@@ -49,7 +50,7 @@ std::string Server::getMIMEType(std::string fileExt) {
     }
 }
 
-void Server::readConfig(std::string fileName)
+int Server::readConfig(std::string fileName)
 {
 	std::fstream configFile;
 	int start, end;
@@ -59,7 +60,7 @@ void Server::readConfig(std::string fileName)
 	if (!configFile.good())
 	{
 		std::cout << "ERROR, " << strerror(errno) << std::endl;
-		return ;
+		return 0;
 	}
 	std::string line;
 	while(1)
@@ -103,7 +104,16 @@ void Server::readConfig(std::string fileName)
 			wip = wip.substr(0, end);
 			rootDir = wip;
 		}
+		if (line.find("error_page 404") != std::string::npos)
+		{
+			start = line.find("error_page 404 ") + 15;
+			wip = line.substr(start);
+			end = wip.find(";");
+			wip = wip.substr(0, end);
+			error404Dir = wip;
+		}
 	}
+	return 1;
 }
 
 void Server::buildHTTPResponse(std::string fileName, std::string fileExt)
@@ -126,19 +136,15 @@ void Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	// if some other page
 	std::string fileFull;
 	fileFull.append(rootDir);
-	// std::cout << fileFull << std::endl;
 	fileFull.append(fileName);
-	// std::cout << fileFull << std::endl;
 	fileFull.append(fileExt);
-	// std::cout << fileFull << std::endl;
 	int fileFd = open(fileFull.data(), O_RDONLY);
 	std::ifstream file(fileFull);
-	// if (fileFd == -1)
 	if (file.is_open() == 0)
 	{
 		std::string errorDir;
 		errorDir.append(rootDir);
-		errorDir.append("error/404.html");
+		errorDir.append(error404Dir);
 		std::ifstream errormsg(errorDir);
 		if (errormsg.is_open() == 0)
 		{
@@ -193,7 +199,8 @@ void Server::log(std::string text)
 
 void Server::launch(std::string configFile)
 {
-	readConfig(configFile);
+	if (readConfig(configFile) == 0)
+		return ;
 	std::cout << "server name = " << servName << std::endl;
 	makeSocket();
 	struct sockaddr_in newAddress;
@@ -224,16 +231,12 @@ void Server::launch(std::string configFile)
 				received.append(buffer.cbegin(), buffer.cend());
 			}
 		} while (valread == 100);
-		// std::cout << received << std::endl;
 		log(received);
 	if (received.find("GET") != std::string::npos)
 	{
-		// std::cout << "getting " << std::endl;
 		size_t start = received.find('/');
 		size_t end = received.find(' ', start);
-		// std::cout << "e - s = " << end - start << std::endl;
 		std::string file = received.substr(start + 1, end - start - 1);
-		// std::cout << file << std::endl;
 		std::string fileExt = ".html";
 		std::string fileName;
 		if (file.find('.') != std::string::npos)
