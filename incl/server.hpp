@@ -22,8 +22,7 @@ public:
 	~Server();
 	Server(const Server &var);
 	Server& operator=(const Server &var);
-	// change away from single socket to multiple
-	listeningSocket lSocket;
+	std::vector <listeningSocket> socketList;
 	void launch(std::string configFile);
 	std::string getMIMEType(std::string fileExt);
 	int readConfig(std::string fileName);

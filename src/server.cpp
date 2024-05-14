@@ -20,9 +20,10 @@ Server::Server(const Server &var)
 {
 	this->numPorts = var.numPorts;
 	this->ports = var.ports;
+	this->socketList = var.socketList;
 	// this->port = var.port;
 	this->servName = var.servName;
-	this->lSocket = var.lSocket;
+	// this->lSocket = var.lSocket;
 	this->response = var.response;
 	this->error404Dir = var.error404Dir;
 }
@@ -33,9 +34,10 @@ Server &Server::operator=(const Server &var)
 	{
 		this->numPorts = var.numPorts;
 		this->ports = var.ports;
+		this->socketList = var.socketList;
 		// this->port = var.port;
 		this->servName = var.servName;
-		this->lSocket = var.lSocket;
+		// this->lSocket = var.lSocket;
 		this->response = var.response;
 		this->error404Dir = var.error404Dir;
 	}
@@ -91,7 +93,6 @@ int Server::readConfig(std::string fileName)
 			if (!wip.empty())
 			{
 				int i;
-				// port = std::stoi(wip);
 				for (i = 0; i < numPorts; i++)
 				{
 					if (ports.at(i) == std::stoi(wip))
@@ -99,7 +100,10 @@ int Server::readConfig(std::string fileName)
 				}
 				if (i == numPorts)
 				{
-					ports.push_back(std::stoi(wip));
+					if (i == 0)
+						ports.at(i) = std::stoi(wip);
+					else
+						ports.push_back(std::stoi(wip));
 					numPorts++;
 				}
 			}
@@ -189,10 +193,7 @@ void Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 //todo: change this
 void Server::makeSocket(int port)
 {
-	if (this->lSocket.getPortNum() != port)
-	{
-		this->lSocket = listeningSocket(port);
-	}
+	socketList.push_back(listeningSocket(port));
 }
 
 void Server::log(std::string text)
@@ -227,63 +228,118 @@ void Server::launch(std::string configFile)
 	std::cout << "num of ports = " << numPorts << std::endl;
 	for (int i = 0; i < numPorts; i++)
 	{
+		std::cout << "about to make a socket , port num = " << ports.at(i) << std::endl;
 		makeSocket(ports.at(i));
 	}
-	
-	struct sockaddr_in newAddress;
-	newAddress = this->lSocket.getAddress();
-	int addrLen = sizeof(newAddress);
 
-	int newSocket;
+	struct pollfd fds[numPorts];
+	for (int i = 0; i < numPorts; i++)
+	{
+		fds[i].fd = socketList.at(i).getServerFd();
+		fds[i].events = POLL_IN;
+	}
+	std::cout << "Server fds are :" << std::endl;
+	for (int i = 0; i < numPorts; i++)
+	{
+		std::cout << fds[i].fd << std::endl;
+	}
+	
+	int pollResult;
 	while (1)
 	{
-		if ((newSocket = accept(this->lSocket.getServerFd(), (struct sockaddr *)&newAddress, (socklen_t *)&addrLen)) < 0)
+		std::cout << "polling" << std::endl;
+		pollResult = poll(fds, numPorts, 2000);
+		if (pollResult == -1)
 		{
 			std::cout << "ERROR, " << strerror(errno) << std::endl;
 			return ;
 		}
-		std::vector<char> buffer(100);
-		std::string received;
-		long valread;
-		do
+		if (pollResult == 0)
+			std::cout << "timeout" << std::endl;
+		if (pollResult >= 1)
 		{
-			valread = recv(newSocket, &buffer[0], buffer.size(), 0);
-			if (valread == -1)
-				{
-					std::cout << "ERROR, " << strerror(errno) << std::endl;
-					return ;
-				}
-			else
+			std::cout << "got connection" << std::endl;
+			std::vector<char> buffer(100);
+			std::string received;
+			long valread;
+			for (int i = 0; i < numPorts; i++)
 			{
-				received.append(buffer.cbegin(), buffer.cend());
+				if (fds[i].revents && POLLIN)
+				{
+					std::cout << "got connection on " << i << std::endl;
+					do
+					{
+						valread = recv(fds[i].fd, &buffer[0], buffer.size(), 0);
+						if (valread == -1)
+							{
+								std::cout << "ERROR, " << strerror(errno) << std::endl;
+								return ;
+							}
+						else
+						{
+							received.append(buffer.cbegin(), buffer.cend());
+						}
+					} while (valread == 100);
+				}
 			}
-		} while (valread == 100);
-		log(received);
-	if (received.find("GET") != std::string::npos)
-	{
-		size_t start = received.find('/');
-		size_t end = received.find(' ', start);
-		std::string file = received.substr(start + 1, end - start - 1);
-		std::string fileExt = ".html";
-		std::string fileName;
-		if (file.find('.') != std::string::npos)
-		{
-			fileExt = file.substr(file.find('.'));
-			fileName = file.substr(0, file.find('.'));
+			
 		}
-		else
-			fileName = file;
-		// std::cout << "name = " << fileName << " and ext = " << fileExt << std::endl;
-		if (fileExt.compare(".php") == 0)
-		{
-			// do CGI 
-		}
-		else
-			buildHTTPResponse(fileName, fileExt);
-		// std::cout << "response is :" << std::endl << response << std::endl;
-		send(newSocket, response.data(), response.length(), 0);
-		response.clear();
 	}
-		close(newSocket);
-	}
+	
+	// struct sockaddr_in newAddress;
+	// newAddress = this->socketList.at(0).getAddress();
+	// std::cout << "port num = " << this->socketList.at(0).getPortNum() << std::endl;
+	// int addrLen = sizeof(newAddress);
+	// int newSocket;
+	// while (1)
+	// {
+	// 	if ((newSocket = accept(this->socketList.at(0).getServerFd(), (struct sockaddr *)&newAddress, (socklen_t *)&addrLen)) < 0)
+	// 	{
+	// 		std::cout << "ERROR, " << strerror(errno) << std::endl;
+	// 		return ;
+	// 	}
+	// 	std::vector<char> buffer(100);
+	// 	std::string received;
+	// 	long valread;
+	// 	do
+	// 	{
+	// 		valread = recv(newSocket, &buffer[0], buffer.size(), 0);
+	// 		if (valread == -1)
+	// 			{
+	// 				std::cout << "ERROR, " << strerror(errno) << std::endl;
+	// 				return ;
+	// 			}
+	// 		else
+	// 		{
+	// 			received.append(buffer.cbegin(), buffer.cend());
+	// 		}
+	// 	} while (valread == 100);
+	// 	log(received);
+	// 	if (received.find("GET") != std::string::npos)
+	// 	{
+	// 		size_t start = received.find('/');
+	// 		size_t end = received.find(' ', start);
+	// 		std::string file = received.substr(start + 1, end - start - 1);
+	// 		std::string fileExt = ".html";
+	// 		std::string fileName;
+	// 		if (file.find('.') != std::string::npos)
+	// 		{
+	// 			fileExt = file.substr(file.find('.'));
+	// 			fileName = file.substr(0, file.find('.'));
+	// 		}
+	// 		else
+	// 			fileName = file;
+	// 		// std::cout << "name = " << fileName << " and ext = " << fileExt << std::endl;
+	// 		if (fileExt.compare(".php") == 0)
+	// 		{
+	// 			// do CGI 
+	// 		}
+	// 		else
+	// 			buildHTTPResponse(fileName, fileExt);
+	// 		// std::cout << "response is :" << std::endl << response << std::endl;
+	// 		send(newSocket, response.data(), response.length(), 0);
+	// 		response.clear();
+	// 	}
+	// 	close(newSocket);
+	// }
 }

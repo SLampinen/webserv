@@ -12,4 +12,5 @@ int main(int argc, char **argv)
 		webserv.launch(argv[1]);
 	else
 		webserv.launch(DEFAULTCONFIG);
+	return 1;
 }

@@ -12,7 +12,6 @@ private:
 	int port;
 	int newSocket;
 public:
-	listeningSocket();
 	listeningSocket(int portNum);
 	~listeningSocket();
 	listeningSocket(const listeningSocket &var);
