@@ -28,7 +28,6 @@ listeningSocket::listeningSocket(int portNum)
 		std::cout << "ERROR, " << strerror(errno) << std::endl;
 		return ;
 	}
-
 }
 
 listeningSocket::~listeningSocket()
