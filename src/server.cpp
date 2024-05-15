@@ -161,6 +161,7 @@ void Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	fileFull.append(rootDir);
 	fileFull.append(fileName);
 	fileFull.append(fileExt);
+	std::cout << fileFull << std::endl;
 	int fileFd = open(fileFull.data(), O_RDONLY);
 	std::ifstream file(fileFull);
 	if (file.is_open() == 0)
@@ -190,7 +191,6 @@ void Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	response.append(buffer);
 }
 
-//todo: change this
 void Server::makeSocket(int port)
 {
 	socketList.push_back(listeningSocket(port));
@@ -218,13 +218,14 @@ void Server::log(std::string text)
 	logfile.close();
 }
 
-// TODO: change accept to poll( or equivalent)
-
 void Server::launch(std::string configFile)
 {
 	if (readConfig(configFile) == 0)
 		return ;
 	std::cout << "server name = " << servName << std::endl;
+	std::cout << "num of ports = " << numPorts << std::endl;
+	if (numPorts == 0)
+		numPorts = 1;
 	std::cout << "num of ports = " << numPorts << std::endl;
 	for (int i = 0; i < numPorts; i++)
 	{
@@ -247,7 +248,7 @@ void Server::launch(std::string configFile)
 	int pollResult;
 	while (1)
 	{
-		std::cout << "polling" << std::endl;
+		// std::cout << "polling" << std::endl;
 		pollResult = poll(fds, numPorts + 1, 2000);
 		if (pollResult == -1)
 		{
@@ -258,27 +259,34 @@ void Server::launch(std::string configFile)
 			std::cout << "timeout" << std::endl;
 		if (pollResult >= 1)
 		{
-			std::cout << "got connection" << std::endl;
-			std::vector<char> buffer(100);
+			// std::cout << "got connection" << std::endl;
+			int buffersize = 100;
+			std::vector<char> buffer(buffersize);
 			std::string received;
 			long valread;
+			for (int i = 0; i < numPorts; i++)
+			{
+				std::cout << "revents for " << i << " are " << fds[i].revents << std::endl;
+			}
+			
 			for (int i = 0; i < numPorts; i++)
 			{
 				if (fds[i].revents && POLLIN)
 				{
 					std::cout << "got connection on " << fds[i].fd << std::endl;
-					struct sockaddr_in newAddress;
-					newAddress = this->socketList.at(i).getAddress();
-					int addrLen = sizeof(newAddress);
-					int newSocket;
-					if ((newSocket = accept(this->socketList.at(i).getServerFd(), (struct sockaddr *)&newAddress, (socklen_t *)&addrLen)) < 0)
-					{
-						std::cout << "ERROR, " << strerror(errno) << std::endl;
-						return ;
-					}
+					// struct sockaddr_in newAddress;
+					// newAddress = this->socketList.at(i).getAddress();
+					// int addrLen = sizeof(newAddress);
+					// int newSocket;
+					// if ((newSocket = accept(this->socketList.at(i).getServerFd(), (struct sockaddr *)&newAddress, (socklen_t *)&addrLen)) < 0)
+					// {
+					// 	std::cout << "ERROR, " << strerror(errno) << std::endl;
+					// 	return ;
+					// }
 					do
 					{
-						valread = recv(newSocket, &buffer[0], buffer.size(), 0);
+						valread = recv(fds[i].fd, &buffer[0], buffer.size(), 0);
+						// valread = recv(newSocket, &buffer[0], buffer.size(), 0);
 						if (valread == -1)
 							{
 								std::cout << "ERROR, " << strerror(errno) << std::endl;
@@ -288,7 +296,7 @@ void Server::launch(std::string configFile)
 						{
 							received.append(buffer.cbegin(), buffer.cend());
 						}
-					} while (valread == 100);
+					} while (valread == buffersize);
 					log(received);
 					if (received.find("GET") != std::string::npos)
 					{
@@ -304,18 +312,17 @@ void Server::launch(std::string configFile)
 						}
 						else
 							fileName = file;
-						// std::cout << "name = " << fileName << " and ext = " << fileExt << std::endl;
 						if (fileExt.compare(".php") == 0)
 						{
 							// do CGI 
 						}
 						else
 							buildHTTPResponse(fileName, fileExt);
-						// std::cout << "response is :" << std::endl << response << std::endl;
-						send(newSocket, response.data(), response.length(), 0);
+						send(fds[i].fd, response.data(), response.length(), 0);
+						// send(newSocket, response.data(), response.length(), 0);
 						response.clear();
 					}
-					close(newSocket);
+					// close(newSocket);
 				}
 			}
 			

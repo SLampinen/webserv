@@ -3,14 +3,12 @@
 # include "library.hpp"
 # include "socket.hpp"
 
-# define BUFFERSIZE 10000
 # define DEFAULTCONFIG "incl/config.conf"
 # define DEFAULT404DIR "error/404Default.html"
 
 class Server
 {
 private:
-	// int port;
 	int numPorts;
 	std::vector<int> ports;
 	std::string servName;
