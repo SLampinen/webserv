@@ -10,6 +10,8 @@ class Server
 {
 private:
 	int numPorts;
+	int fdsSize;
+	// struct pollfd *fds;
 	std::vector<int> ports;
 	std::string servName;
 	std::string rootDir;
@@ -27,6 +29,8 @@ public:
 	void makeSocket(int port);
 	void buildHTTPResponse(std::string fileName, std::string fileExt);
 	void log(std::string text);
+	// void createPollfd(int numPorts);
+	struct pollfd addToPollfd(struct pollfd fds[], int socketToAdd);
 };
 
 #endif

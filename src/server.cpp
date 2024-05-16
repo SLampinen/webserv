@@ -3,6 +3,7 @@
 Server::Server()
 {
 	this->numPorts = 0;
+	this->fdsSize = 0;
 	this->servName = DEFAULTSERVNAME;
 	// this->port = DEFAULTPORT;
 	this->ports.push_back(DEFAULTPORT);
@@ -20,6 +21,7 @@ Server::Server(const Server &var)
 {
 	this->numPorts = var.numPorts;
 	this->ports = var.ports;
+	this->fdsSize = var.fdsSize;
 	this->socketList = var.socketList;
 	// this->port = var.port;
 	this->servName = var.servName;
@@ -34,6 +36,7 @@ Server &Server::operator=(const Server &var)
 	{
 		this->numPorts = var.numPorts;
 		this->ports = var.ports;
+		this->fdsSize = var.fdsSize;
 		this->socketList = var.socketList;
 		// this->port = var.port;
 		this->servName = var.servName;
@@ -83,7 +86,7 @@ int Server::readConfig(std::string fileName)
 			end = line.find("#");
 			line = line.substr(0, end);
 		}
-		// sets port if config file has one
+		// sets port(s) if config file has any
 		if (line.find("listen") != std::string::npos)
 		{
 			start = line.find("listen ") + 7;
@@ -218,38 +221,64 @@ void Server::log(std::string text)
 	logfile.close();
 }
 
+// void Server::createPollfd(int numPorts)
+// {
+// 	fds = 
+// 	for (int i = 0; i < numPorts; i++)
+// 	{
+// 		fds[i].fd = socketList.at(i).getServerFd();
+// 		fds[i].events = POLLIN;
+// 	}
+// 	std::cout << "Server fds are :" << std::endl;
+// 	for (int i = 0; i < numPorts; i++)
+// 	{
+// 		std::cout << fds[i].fd << std::endl;
+// 	}
+// }
+
+struct pollfd Server::addToPollfd(struct pollfd fds[], int socketToAdd)
+{
+	struct pollfd temp[fdsSize + 1];
+	std::cout << "here" << std::endl;
+	for (int i = 0; i < fdsSize; i++)
+	{
+		temp[i] = fds[i];
+	}
+	fdsSize++;
+	temp[fdsSize].fd = socketToAdd;
+	temp[fdsSize].events = POLLIN;
+	return *temp;
+}
+
 void Server::launch(std::string configFile)
 {
 	if (readConfig(configFile) == 0)
 		return ;
-	std::cout << "server name = " << servName << std::endl;
-	std::cout << "num of ports = " << numPorts << std::endl;
 	if (numPorts == 0)
 		numPorts = 1;
-	std::cout << "num of ports = " << numPorts << std::endl;
 	for (int i = 0; i < numPorts; i++)
 	{
 		std::cout << "about to make a socket , port num = " << ports.at(i) << std::endl;
 		makeSocket(ports.at(i));
 	}
-
+	// createPollfd(numPorts);
 	struct pollfd fds[numPorts];
+	fdsSize = numPorts;
 	for (int i = 0; i < numPorts; i++)
 	{
 		fds[i].fd = socketList.at(i).getServerFd();
-		fds[i].events = POLL_IN;
+		fds[i].events = POLLIN;
 	}
 	std::cout << "Server fds are :" << std::endl;
 	for (int i = 0; i < numPorts; i++)
 	{
 		std::cout << fds[i].fd << std::endl;
 	}
-	
 	int pollResult;
 	while (1)
 	{
 		// std::cout << "polling" << std::endl;
-		pollResult = poll(fds, numPorts + 1, 2000);
+		pollResult = poll(fds, numPorts, 2000);
 		if (pollResult == -1)
 		{
 			std::cout << "ERROR, " << strerror(errno) << std::endl;
@@ -269,20 +298,27 @@ void Server::launch(std::string configFile)
 				std::cout << "revents for " << i << " are " << fds[i].revents << std::endl;
 			}
 			
-			for (int i = 0; i < numPorts; i++)
+			for (int i = 0; i < fdsSize; i++)
 			{
 				if (fds[i].revents && POLLIN)
 				{
-					std::cout << "got connection on " << fds[i].fd << std::endl;
-					// struct sockaddr_in newAddress;
-					// newAddress = this->socketList.at(i).getAddress();
-					// int addrLen = sizeof(newAddress);
-					// int newSocket;
-					// if ((newSocket = accept(this->socketList.at(i).getServerFd(), (struct sockaddr *)&newAddress, (socklen_t *)&addrLen)) < 0)
-					// {
-					// 	std::cout << "ERROR, " << strerror(errno) << std::endl;
-					// 	return ;
-					// }
+					if (i < numPorts)
+					{
+						std::cout << "got connection on " << fds[i].fd << std::endl;
+						struct sockaddr_in newAddress;
+						newAddress = this->socketList.at(i).getAddress();
+						int addrLen = sizeof(newAddress);
+						int newSocket;
+						int socketRes;
+						socketRes = accept(this->socketList.at(i).getServerFd(), (struct sockaddr *)&newAddress, (socklen_t *)&addrLen);
+						if (socketRes < 0)
+						{
+							std::cout << "ERROR, " << strerror(errno) << std::endl;
+							return ;
+						}
+						addToPollfd(fds, newSocket);
+						break ;
+					}
 					do
 					{
 						valread = recv(fds[i].fd, &buffer[0], buffer.size(), 0);
