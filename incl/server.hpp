@@ -11,11 +11,9 @@ class Server
 private:
 	int numPorts;
 	int fdsSize;
-	// struct pollfd *fds;
 	std::vector<int> ports;
 	std::string servName;
 	std::string rootDir;
-	std::string response;
 	std::string error404Dir;
 public:
 	Server();
@@ -27,10 +25,8 @@ public:
 	std::string getMIMEType(std::string fileExt);
 	int readConfig(std::string fileName);
 	void makeSocket(int port);
-	void buildHTTPResponse(std::string fileName, std::string fileExt);
+	std::string buildHTTPResponse(std::string fileName, std::string fileExt);
 	void log(std::string text);
-	// void createPollfd(int numPorts);
-	struct pollfd addToPollfd(struct pollfd fds[], int socketToAdd);
 };
 
 #endif
