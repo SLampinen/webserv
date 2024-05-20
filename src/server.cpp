@@ -7,6 +7,8 @@ Server::Server()
 	this->servName = DEFAULTSERVNAME;
 	this->ports.push_back(DEFAULTPORT);
 	this->error404Dir = DEFAULT404DIR;
+	this->cgiExt = "";
+	this->cgiPath = "";
 }
 
 Server::~Server()
@@ -22,6 +24,8 @@ Server::Server(const Server &var)
 	this->socketList = var.socketList;
 	this->servName = var.servName;
 	this->error404Dir = var.error404Dir;
+	this->cgiExt = var.cgiExt;
+	this->cgiExt = var.cgiPath;
 }
 
 Server &Server::operator=(const Server &var)
@@ -34,20 +38,27 @@ Server &Server::operator=(const Server &var)
 		this->socketList = var.socketList;
 		this->servName = var.servName;
 		this->error404Dir = var.error404Dir;
+		this->cgiExt = var.cgiExt;
+		this->cgiExt = var.cgiPath;
 	}
 	return (*this);
 }
 
 std::string Server::getMIMEType(std::string fileExt) {
-    if (fileExt.compare(".html") == 0 || fileExt.compare(".htm") == 0) {
+    if (fileExt.compare(".html") == 0 || fileExt.compare(".htm") == 0) 
+	{
         return "text/html";
-    } else if (fileExt.compare(".txt") == 0) {
+    } else if (fileExt.compare(".txt") == 0) 
+	{
         return "text/plain";
-    } else if (fileExt.compare(".jpg") == 0 || fileExt.compare(".jpeg") == 0) {
+    } else if (fileExt.compare(".jpg") == 0 || fileExt.compare(".jpeg") == 0) 
+	{
         return "image/jpeg";
-    } else if (fileExt.compare(".png") == 0) {
+    } else if (fileExt.compare(".png") == 0) 
+	{
         return "image/png";
-    } else {
+    } else 
+	{
         return "application/octet-stream";
     }
 }
@@ -80,7 +91,7 @@ int Server::readConfig(std::string fileName)
 		// sets port(s) if config file has any
 		if (line.find("listen") != std::string::npos)
 		{
-			start = line.find("listen ") + 7;
+			start = line.find("listen") + 7;
 			wip = line.substr(start);
 			end = wip.find_first_not_of("0123456789");
 			wip = wip.substr(0, end);
@@ -104,7 +115,7 @@ int Server::readConfig(std::string fileName)
 		}
 		if (line.find("server_name") != std::string::npos)
 		{
-			start = line.find("server_name ") + 12;
+			start = line.find("server_name") + 12;
 			wip = line.substr(start);
 			end = wip.find(";");
 			wip = wip.substr(0, end);
@@ -112,24 +123,56 @@ int Server::readConfig(std::string fileName)
 			{
 				servName = wip;
 			}
+			//debugging help
+			std::cout << wip << std::endl;
 		}
 		if (line.find("root") != std::string::npos)
 		{
-			start = line.find("root ") + 5;
+			start = line.find("root") + 5;
 			wip = line.substr(start);
 			end = wip.find(";");
 			wip = wip.substr(0, end);
 			rootDir = wip;
+			//debugging help
+			std::cout << wip << std::endl;
 		}
 		if (line.find("error_page 404") != std::string::npos)
 		{
-			start = line.find("error_page 404 ") + 15;
+			start = line.find("error_page 404") + 15;
 			wip = line.substr(start);
 			end = wip.find(";");
 			wip = wip.substr(0, end);
 			error404Dir = wip;
+			//debugging help
+			std::cout << wip << std::endl;
 		}
+		if (line.find("cgi_ext") != std::string::npos)
+		{
+			start = line.find("cgi_ext") + 8;
+			wip = line.substr(start);
+			end = wip.find(";");
+			wip = wip.substr(0, end);
+			if (cgiExt.compare("") == 0)
+				cgiExt = wip;
+			//debugging help
+			std::cout << wip << std::endl;
+		}
+		if (line.find("cgi_path") != std::string::npos)
+		{
+			start = line.find("cgi_path") + 9;
+			wip = line.substr(start);
+			end = wip.find(";");
+			wip = wip.substr(0, end);
+			if (cgiPath.compare("") == 0)
+				cgiPath = wip;
+			//debugging help
+			std::cout << wip << std::endl;
+		}
+		
 	}
+	//debugging help
+	std::cout << "cgi path = " << cgiPath << std::endl;
+	std::cout << "cgi ext = " << cgiExt << std::endl;
 	return 1;
 }
 
@@ -239,7 +282,8 @@ void Server::launch(std::string configFile)
 	std::vector<struct pollfd> fds;
 
     // Add listening sockets to pollfd structure
-    for (size_t i = 0; i < socketList.size(); ++i) {
+    for (size_t i = 0; i < socketList.size(); ++i) 
+	{
         struct pollfd pfd;
         pfd.fd = socketList[i].getServerFd();
         pfd.events = POLLIN;
@@ -248,8 +292,9 @@ void Server::launch(std::string configFile)
 
     while (true) 
 	{
-        int pollCount = poll(fds.data(), fds.size(), -1);
-        if (pollCount < 0) {
+        int pollCount = poll(fds.data(), fds.size(), POLL_TIMEOUT);
+        if (pollCount < 0) 
+		{
             std::cerr << "Poll error: " << strerror(errno) << std::endl;
             continue;
         }
@@ -294,7 +339,7 @@ void Server::launch(std::string configFile)
                     int bytesRead = recv(fds[i].fd, buffer, sizeof(buffer), 0);
                     if (bytesRead < 0) 
 					{
-						// is this legal? can we check errno here?
+						// is this legal? can we check errno here? or do we need some other way to do this?
                         if (errno != EWOULDBLOCK && errno != EAGAIN) 
 						{
                             std::cerr << "Recv error: " << strerror(errno) << std::endl;
@@ -332,14 +377,25 @@ void Server::launch(std::string configFile)
 						if (fileExt.compare(".php") == 0)
 						{
 							std::cout << "CGI" << std::endl;
+							if (cgiExt.compare("") == 0 || cgiPath.compare("") == 0)
+							{
+								std::cout << "ERROR, CGI not set" << std::endl;
+							}
 							// do CGI 
 						}
 						else
+						{
 							response = buildHTTPResponse(fileName, fileExt);
-                        send(fds[i].fd, response.c_str(), response.length(), 0);
+                        	send(fds[i].fd, response.c_str(), response.length(), 0);
+						}
+						std::cout << "prev message from this client was " << time(NULL) - socketList[0].getTimeOfLastMsg() << " seconds ago" << std::endl;
                     }
                 }
             }
         }
+		if (pollCount == 0)
+		{
+			std::cout << "timeout" << std::endl;
+		}
     }
 }

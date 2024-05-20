@@ -28,6 +28,7 @@ listeningSocket::listeningSocket(int portNum)
 		std::cout << "ERROR, " << strerror(errno) << std::endl;
 		return ;
 	}
+	this->timeOfLastMsg = time(NULL);
 }
 
 listeningSocket::~listeningSocket()
@@ -41,6 +42,7 @@ listeningSocket::listeningSocket(const listeningSocket &var)
 	this->address = var.address;
 	this->port = var.port;
 	this->newSocket = var.newSocket;
+	this->timeOfLastMsg = var.timeOfLastMsg;
 }
 
 listeningSocket &listeningSocket::operator=(const listeningSocket &var)
@@ -51,6 +53,7 @@ listeningSocket &listeningSocket::operator=(const listeningSocket &var)
 		this->address = var.address;
 		this->port = var.port;
 		this->newSocket = var.newSocket;
+		this->timeOfLastMsg = var.timeOfLastMsg;
 	}
 	return (*this);
 }
@@ -70,4 +73,9 @@ struct sockaddr_in listeningSocket::getAddress()
 int listeningSocket::getServerFd()
 {
 	return this->serverFd;
+}
+
+time_t listeningSocket::getTimeOfLastMsg()
+{
+	return this->timeOfLastMsg;
 }

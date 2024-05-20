@@ -5,6 +5,8 @@
 
 # define DEFAULTCONFIG "incl/config.conf"
 # define DEFAULT404DIR "error/404Default.html"
+# define CONNECTION_TIMEOUT 5
+# define POLL_TIMEOUT 1000
 
 class Server
 {
@@ -15,6 +17,8 @@ private:
 	std::string servName;
 	std::string rootDir;
 	std::string error404Dir;
+	std::string cgiExt;
+	std::string cgiPath;
 public:
 	Server();
 	~Server();

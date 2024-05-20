@@ -11,6 +11,7 @@ private:
 	struct sockaddr_in address;
 	int port;
 	int newSocket;
+	time_t timeOfLastMsg;
 public:
 	listeningSocket(int portNum);
 	~listeningSocket();
@@ -19,6 +20,7 @@ public:
 	struct sockaddr_in getAddress();
 	int getServerFd();
 	int getPortNum();
+	time_t getTimeOfLastMsg();
 };
 
 
