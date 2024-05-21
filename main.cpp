@@ -1,4 +1,4 @@
-#include "incl/server.hpp"
+#include "incl/manager.hpp"
 
 int main(int argc, char **argv)
 {
@@ -7,10 +7,10 @@ int main(int argc, char **argv)
 		std::cout << "User ERROR, give a maximum of 1 config file" << std::endl;
 		return 0;
 	}
-	Server webserv;
+	Manager serverManager;
 	if (argc == 2)
-		webserv.launch(argv[1]);
+		serverManager.run(argv[1]);
 	else
-		webserv.launch(DEFAULTCONFIG);
+		serverManager.run(DEFAULTCONFIG);
 	return 1;
 }

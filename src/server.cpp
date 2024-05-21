@@ -3,8 +3,7 @@
 Server::Server()
 {
 	this->numPorts = 0;
-	this->fdsSize = 0;
-	this->servName = DEFAULTSERVNAME;
+	this->servName = "defaultserv";
 	this->ports.push_back(DEFAULTPORT);
 	this->error404Dir = DEFAULT404DIR;
 	this->cgiExt = "";
@@ -20,7 +19,6 @@ Server::Server(const Server &var)
 {
 	this->numPorts = var.numPorts;
 	this->ports = var.ports;
-	this->fdsSize = var.fdsSize;
 	this->socketList = var.socketList;
 	this->servName = var.servName;
 	this->error404Dir = var.error404Dir;
@@ -34,7 +32,6 @@ Server &Server::operator=(const Server &var)
 	{
 		this->numPorts = var.numPorts;
 		this->ports = var.ports;
-		this->fdsSize = var.fdsSize;
 		this->socketList = var.socketList;
 		this->servName = var.servName;
 		this->error404Dir = var.error404Dir;
@@ -42,6 +39,69 @@ Server &Server::operator=(const Server &var)
 		this->cgiExt = var.cgiPath;
 	}
 	return (*this);
+}
+
+void Server::print(void)
+{
+	std::cout << "num of ports = " << numPorts << std::endl;
+	std::cout << "server name = " << servName << std::endl;
+	std::cout << "root dir = " << rootDir << std::endl;
+	std::cout << "error dir = " << error404Dir << std::endl;
+	std::cout << "cgi path and ext  = " << cgiPath << " and " << cgiExt << std::endl;
+	std::cout << "ports are :" << std::endl;
+	for (int i = 0; i < numPorts; i++)
+	{
+		std::cout << ports.at(i) << std::endl;
+	}
+	
+}
+
+std::string Server::getServerName(void)
+{
+	return this->servName;
+}
+
+void Server::setServerName(std::string name)
+{
+	this->servName = name;
+}
+
+void Server::addPort(int port)
+{
+	int i;
+	for (i = 0; i < numPorts; i++)
+	{
+		if (ports.at(i) == port)
+			break ;
+	}
+	if (i == numPorts)
+	{
+		if (i == 0)
+			ports.at(i) = port;
+		else
+			ports.push_back(port);
+		numPorts++;
+	}
+}
+
+void Server::setRootDir(std::string dir)
+{
+	this->rootDir = dir;
+}
+
+void Server::setErrorDir(std::string dir)
+{
+	this->error404Dir = dir;
+}
+
+void Server::setCGIExt(std::string ext)
+{
+	this->cgiExt = ext;
+}
+
+void Server::setCGIPath(std::string path)
+{
+	this->cgiPath = path;
 }
 
 std::string Server::getMIMEType(std::string fileExt) {
@@ -61,119 +121,6 @@ std::string Server::getMIMEType(std::string fileExt) {
 	{
         return "application/octet-stream";
     }
-}
-
-int Server::readConfig(std::string fileName)
-{
-	std::fstream configFile;
-	int start, end;
-	std::string wip;
-
-	configFile.open(fileName);
-	if (!configFile.good())
-	{
-		std::cout << "ERROR, " << strerror(errno) << std::endl;
-		return 0;
-	}
-	std::string line;
-	while(1)
-	{
-		std::getline(configFile, line);
-		// std::cout << line << std::endl;
-		if (!line.compare("\0") || configFile.eof())
-			break;
-		// removes comments in config file
-		if (line.find("#") != std::string::npos)
-		{
-			end = line.find("#");
-			line = line.substr(0, end);
-		}
-		// sets port(s) if config file has any
-		if (line.find("listen") != std::string::npos)
-		{
-			start = line.find("listen") + 7;
-			wip = line.substr(start);
-			end = wip.find_first_not_of("0123456789");
-			wip = wip.substr(0, end);
-			if (!wip.empty())
-			{
-				int i;
-				for (i = 0; i < numPorts; i++)
-				{
-					if (ports.at(i) == std::stoi(wip))
-						break ;
-				}
-				if (i == numPorts)
-				{
-					if (i == 0)
-						ports.at(i) = std::stoi(wip);
-					else
-						ports.push_back(std::stoi(wip));
-					numPorts++;
-				}
-			}
-		}
-		if (line.find("server_name") != std::string::npos)
-		{
-			start = line.find("server_name") + 12;
-			wip = line.substr(start);
-			end = wip.find(";");
-			wip = wip.substr(0, end);
-			if (wip != servName)
-			{
-				servName = wip;
-			}
-			//debugging help
-			std::cout << wip << std::endl;
-		}
-		if (line.find("root") != std::string::npos)
-		{
-			start = line.find("root") + 5;
-			wip = line.substr(start);
-			end = wip.find(";");
-			wip = wip.substr(0, end);
-			rootDir = wip;
-			//debugging help
-			std::cout << wip << std::endl;
-		}
-		if (line.find("error_page 404") != std::string::npos)
-		{
-			start = line.find("error_page 404") + 15;
-			wip = line.substr(start);
-			end = wip.find(";");
-			wip = wip.substr(0, end);
-			error404Dir = wip;
-			//debugging help
-			std::cout << wip << std::endl;
-		}
-		if (line.find("cgi_ext") != std::string::npos)
-		{
-			start = line.find("cgi_ext") + 8;
-			wip = line.substr(start);
-			end = wip.find(";");
-			wip = wip.substr(0, end);
-			if (cgiExt.compare("") == 0)
-				cgiExt = wip;
-			//debugging help
-			std::cout << wip << std::endl;
-		}
-		if (line.find("cgi_path") != std::string::npos)
-		{
-			start = line.find("cgi_path") + 9;
-			wip = line.substr(start);
-			end = wip.find(";");
-			wip = wip.substr(0, end);
-			if (cgiPath.compare("") == 0)
-				cgiPath = wip;
-			//debugging help
-			std::cout << wip << std::endl;
-		}
-		
-	}
-	//debugging help
-	std::cout << "cgi path = " << cgiPath << std::endl;
-	std::cout << "cgi ext = " << cgiExt << std::endl;
-	return 1;
 }
 
 std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
@@ -268,10 +215,17 @@ void Server::log(std::string text)
 	logfile.close();
 }
 
-void Server::launch(std::string configFile)
+void Server::makeSockets()
 {
-	if (readConfig(configFile) == 0)
-		return ;
+	for (int i = 0; i < numPorts; i++)
+	{
+		std::cout << "about to make a socket , port num = " << ports.at(i) << std::endl;
+		makeSocket(ports.at(i));
+	}
+}
+
+void Server::launch()
+{
 	if (numPorts == 0)
 		numPorts = 1;
 	for (int i = 0; i < numPorts; i++)
@@ -395,7 +349,7 @@ void Server::launch(std::string configFile)
         }
 		if (pollCount == 0)
 		{
-			std::cout << "timeout" << std::endl;
+			// std::cout << "timeout" << std::endl;
 		}
     }
 }

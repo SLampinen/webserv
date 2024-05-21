@@ -2,7 +2,6 @@
 # define SOCKET_HPP
 # include "library.hpp"
 # define DEFAULTPORT 8080
-# define DEFAULTSERVNAME "webserv" 
 
 class listeningSocket
 {

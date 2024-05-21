@@ -12,7 +12,6 @@ class Server
 {
 private:
 	int numPorts;
-	int fdsSize;
 	std::vector<int> ports;
 	std::string servName;
 	std::string rootDir;
@@ -24,13 +23,25 @@ public:
 	~Server();
 	Server(const Server &var);
 	Server& operator=(const Server &var);
-	std::vector <listeningSocket> socketList;
-	void launch(std::string configFile);
+	void launch();
 	std::string getMIMEType(std::string fileExt);
-	int readConfig(std::string fileName);
-	void makeSocket(int port);
 	std::string buildHTTPResponse(std::string fileName, std::string fileExt);
+	std::string getServerName(void);
+
+	void makeSocket(int port);
+	void makeSockets(void);
+
+	void addPort(int port);
+	void setServerName(std::string name);
+	void setRootDir(std::string dir);
+	void setErrorDir(std::string dir);
+	void setCGIExt(std::string ext);
+	void setCGIPath(std::string path);
+
 	void log(std::string text);
+	void print(void);
+
+	std::vector <listeningSocket> socketList;
 };
 
 #endif

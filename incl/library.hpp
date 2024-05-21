@@ -16,5 +16,6 @@
 # include <iomanip>
 # include <fstream>
 # include <poll.h>
+# include <map>
 
 #endif
