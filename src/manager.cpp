@@ -24,6 +24,11 @@ Manager &Manager::operator=(const Manager &var)
 	return (*this);
 }
 
+void setNonBlocking(int sockfd) {
+    int flags = fcntl(sockfd, F_GETFL, 0);
+    fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+}
+
 void Manager::run(std::string configFile)
 {
 	if (readConfig(configFile) == 0)
@@ -32,15 +37,12 @@ void Manager::run(std::string configFile)
 		return ;
 	}
 	std::cout << "number of servers = " << numOfServers << std::endl;
-		std::cout << "list of servers and their contents :" << std::endl;
 	for (int i = 0; i < numOfServers; i++)
 	{
-		serverList.at(i).print();
 		serverList.at(i).makeSockets();
 		std::cout << "Sockets are made for " << i << std::endl;
 	}
-	
-	
+	serverList.at(0).print();
 }
 
 int Manager::readConfig(std::string fileName)
@@ -57,20 +59,24 @@ int Manager::readConfig(std::string fileName)
 		return 0;
 	}
 	std::string line;
-	std::cout << "This is in manager: " << std::endl;
 	while (1)
 	{
 		std::getline(configFile, line);
-		// std::cout << line << std::endl;
+		std::cout << line << std::endl;
 		if (!line.compare("\0") || configFile.eof())
 			break;
+		//remove comments
+		if (line.find("#") != std::string::npos)
+		{
+			end = line.find("#");
+			line = line.substr(0, end);
+		}
 		if (line.find("server {") != std::string::npos)
 		{
 			std::cout << "start of server block" << std::endl;
 			std::string serverName = "server.num";
 			serverName.append(std::to_string(numOfServers));
 			Server newServer;
-			serverList.push_back(newServer);
 			std::cout << serverName << std::endl;
 			std::cout << "The (default) name of server is " << newServer.getServerName() << std::endl;
 			numOfServers++;
@@ -80,13 +86,15 @@ int Manager::readConfig(std::string fileName)
 				// std::cout << line << std::endl;
 				if (!line.compare("\0") || configFile.eof())
 					break;
-				if (line.find("}") != std::string::npos)
-					break;
-				//remove comments
 				if (line.find("#") != std::string::npos)
 				{
 					end = line.find("#");
 					line = line.substr(0, end);
+				}
+				if (line.find("}") != std::string::npos)
+				{
+					std::cout << "----------end of block----------" << std::endl;
+					break;
 				}
 				if (line.find("server_name") != std::string::npos)
 				{
@@ -142,9 +150,9 @@ int Manager::readConfig(std::string fileName)
 				
 			}
 			newServer.print();
+			serverList.push_back(newServer);
 			std::cout << "end of server block" <<std::endl;
 		}
 	}
-	std::cout << "end of manager" << std::endl;
 	return 1;
 }

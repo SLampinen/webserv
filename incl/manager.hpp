@@ -8,11 +8,6 @@ class Manager
 {
 private:
 	int numOfServers;
-	std::string servName;
-	std::string rootDir;
-	std::string error404Dir;
-	std::string cgiExt;
-	std::string cgiPath;
 	std::vector<Server> serverList;
 
 public:

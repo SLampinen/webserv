@@ -21,9 +21,10 @@ Server::Server(const Server &var)
 	this->ports = var.ports;
 	this->socketList = var.socketList;
 	this->servName = var.servName;
+	this->rootDir = var.rootDir;
 	this->error404Dir = var.error404Dir;
 	this->cgiExt = var.cgiExt;
-	this->cgiExt = var.cgiPath;
+	this->cgiPath = var.cgiPath;
 }
 
 Server &Server::operator=(const Server &var)
@@ -34,9 +35,10 @@ Server &Server::operator=(const Server &var)
 		this->ports = var.ports;
 		this->socketList = var.socketList;
 		this->servName = var.servName;
+		this->rootDir = var.rootDir;
 		this->error404Dir = var.error404Dir;
 		this->cgiExt = var.cgiExt;
-		this->cgiExt = var.cgiPath;
+		this->cgiPath = var.cgiPath;
 	}
 	return (*this);
 }
@@ -179,7 +181,7 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	return response;
 }
 
-void setNonBlocking(int sockfd) {
+void setnonblocking(int sockfd) {
     int flags = fcntl(sockfd, F_GETFL, 0);
     fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
 }
@@ -187,7 +189,7 @@ void setNonBlocking(int sockfd) {
 void Server::makeSocket(int port)
 {
 	listeningSocket newSocket(port);
-    setNonBlocking(newSocket.getServerFd()); // Set the listening socket to non-blocking mode
+    setnonblocking(newSocket.getServerFd()); // Set the listening socket to non-blocking mode
     this->socketList.push_back(newSocket); // Add the new socket to the list
     std::cout << "Socket for port " << port << " created and added to the list." << std::endl;
 
@@ -217,6 +219,8 @@ void Server::log(std::string text)
 
 void Server::makeSockets()
 {
+	if (numPorts == 0)
+		numPorts = 1;
 	for (int i = 0; i < numPorts; i++)
 	{
 		std::cout << "about to make a socket , port num = " << ports.at(i) << std::endl;
@@ -277,7 +281,7 @@ void Server::launch()
                                 break;
                             }
                         }
-                        setNonBlocking(clientFd);
+                        setnonblocking(clientFd);
                         // Add the new client socket to the pollfd structure
                         struct pollfd pfd;
                         pfd.fd = clientFd;
