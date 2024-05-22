@@ -11,8 +11,7 @@
 class Server
 {
 private:
-	int numPorts;
-	std::vector<int> ports;
+	int port;
 	std::string servName;
 	std::string rootDir;
 	std::string error404Dir;
@@ -28,10 +27,11 @@ public:
 	std::string buildHTTPResponse(std::string fileName, std::string fileExt);
 	std::string getServerName(void);
 
-	void makeSocket(int port);
-	void makeSockets(void);
+	int getPort(void);
 
-	void addPort(int port);
+	void makeSocket(int port);
+
+	void setPort(int portNum);
 	void setServerName(std::string name);
 	void setRootDir(std::string dir);
 	void setErrorDir(std::string dir);
@@ -41,7 +41,7 @@ public:
 	void log(std::string text);
 	void print(void);
 
-	std::vector <listeningSocket> socketList;
+	listeningSocket socketList;
 };
 
 #endif

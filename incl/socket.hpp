@@ -12,6 +12,7 @@ private:
 	int newSocket;
 	time_t timeOfLastMsg;
 public:
+	listeningSocket();
 	listeningSocket(int portNum);
 	~listeningSocket();
 	listeningSocket(const listeningSocket &var);

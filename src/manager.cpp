@@ -36,16 +36,120 @@ void Manager::run(std::string configFile)
 		std::cout << "ERROR reading config file" << std::endl;
 		return ;
 	}
-	std::cout << "number of servers = " << numOfServers << std::endl;
-	for (int i = 0; i < numOfServers; i++)
-	{
-		serverList.at(i).makeSockets();
-		std::cout << "Sockets are made for " << i << std::endl;
-	}
+	std::cout << "--------------------------------------------------" << std::endl << "number of servers = " << numOfServers << std::endl;
+	std::vector <struct pollfd> fds;
 	for (int i = 0; i < numOfServers; i++)
 	{
 		// serverList.at(i).launch();
 		serverList.at(i).print();
+		serverList.at(i).makeSocket(serverList.at(i).getPort());
+		struct pollfd pfd;
+		pfd.fd = serverList.at(i).socketList.getServerFd();
+		pfd.events = POLLIN;
+		fds.push_back(pfd);
+	}
+	while (true)
+	{
+        int pollCount = poll(fds.data(), fds.size(), POLL_TIMEOUT);
+		if (pollCount < 0)
+		{
+            std::cerr << "Poll error: " << strerror(errno) << std::endl;
+            continue;
+		}
+		for (size_t i = 0; i < fds.size(); i++)
+		{
+			if (fds[i].revents & POLLIN)
+			{
+				if (fds[i].fd == serverList[i].socketList.getServerFd())
+				{
+					std::cout << "new connection" << std::endl;
+					while (true)
+					{
+                        struct sockaddr_in clientAddr;
+						socklen_t clientAddrLen = sizeof(clientAddr);
+                        int clientFd = accept(fds[i].fd, (struct sockaddr*)&clientAddr, &clientAddrLen);
+						if (clientFd < 0)
+						{
+                            if (errno == EWOULDBLOCK || errno == EAGAIN) 
+							{
+                                // No more clients to accept
+                                break;
+                            } else 
+							{
+                                std::cerr << "Accept error: " << strerror(errno) << std::endl;
+                                break;
+                            }
+						}
+						setNonBlocking(clientFd);
+                        struct pollfd pfd;
+                        pfd.fd = clientFd;
+                        pfd.events = POLLIN;
+                        fds.push_back(pfd);
+                        std::cout << "New client connected" << std::endl;
+					}
+				}
+				else
+				{
+					char buffer[1024];
+                    int bytesRead = recv(fds[i].fd, buffer, sizeof(buffer), 0);
+					if (bytesRead < 0)
+					{
+						// is this legal? can we check errno here? or do we need some other way to do this?
+                        if (errno != EWOULDBLOCK && errno != EAGAIN) 
+						{
+                            std::cerr << "Recv error: " << strerror(errno) << std::endl;
+                            close(fds[i].fd);
+                            fds.erase(fds.begin() + i);
+                            --i;
+                        }
+					}
+					else if (bytesRead == 0)
+					{
+                        // Connection closed
+                        std::cout << "Client disconnected" << std::endl;
+                        close(fds[i].fd);
+                        fds.erase(fds.begin() + i);
+                        --i;
+					}
+					else 
+					{
+                        // Process the received data
+						std::string response;
+                        std::string receivedData(buffer, bytesRead);
+						// log(receivedData);
+						size_t start = receivedData.find('/');
+						size_t end = receivedData.find(' ', start);
+                        std::string file = receivedData.substr(start + 1, end - start - 1);
+						std::string fileExt = ".html";
+						std::string fileName;
+						if (file.find('.') != std::string::npos)
+						{
+							fileExt = file.substr(file.find('.'));
+							fileName = file.substr(0, file.find('.'));
+						}
+						else
+							fileName = file;
+						if (fileExt.compare(".php") == 0)
+						{
+							std::cout << "CGI" << std::endl;
+							// if (cgiExt.compare("") == 0 || cgiPath.compare("") == 0)
+							// {
+							// 	std::cout << "ERROR, CGI not set" << std::endl;
+							// }
+							// do CGI 
+						}
+						else
+						{
+							std::cout << "here, making up a response, i = " << i << std::endl;
+							response = serverList.at(0).buildHTTPResponse(fileName, fileExt);
+                        	send(fds[i].fd, response.c_str(), response.length(), 0);
+						}
+						// std::cout << "prev message from this client was " << time(NULL) - socketList.getTimeOfLastMsg() << " seconds ago" << std::endl;
+                    }
+				}
+			}
+		}
+		
 	}
 	
 }
@@ -115,9 +219,10 @@ int Manager::readConfig(std::string fileName)
 					wip = line.substr(start);
 					end = wip.find_first_not_of("0123456789");
 					wip = wip.substr(0, end);
-					if (!wip.empty())
+					if (!wip.empty() && newServer.getPort() == DEFAULTPORT)
 					{
-						newServer.addPort(std::stoi(wip));
+						std::cout << "setting port" << std::endl;
+						newServer.setPort(std::stoi(wip));
 					}
 				}
 				if (line.find("root") != std::string::npos)

@@ -1,5 +1,9 @@
 #include "../incl/socket.hpp"
 
+listeningSocket::listeningSocket()
+{
+	
+}
 listeningSocket::listeningSocket(int portNum)
 {
 	std::cout << "making socket (with port num " << portNum << ")" << std::endl;

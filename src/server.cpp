@@ -2,9 +2,9 @@
 
 Server::Server()
 {
-	this->numPorts = 0;
+	this->socketList = listeningSocket(DEFAULTPORT);
 	this->servName = "defaultserv";
-	this->ports.push_back(DEFAULTPORT);
+	this->port = DEFAULTPORT;
 	this->error404Dir = DEFAULT404DIR;
 	this->cgiExt = "";
 	this->cgiPath = "";
@@ -17,8 +17,7 @@ Server::~Server()
 
 Server::Server(const Server &var)
 {
-	this->numPorts = var.numPorts;
-	this->ports = var.ports;
+	this->port = var.port;
 	this->socketList = var.socketList;
 	this->servName = var.servName;
 	this->rootDir = var.rootDir;
@@ -31,8 +30,7 @@ Server &Server::operator=(const Server &var)
 {
 	if (this !=  &var)
 	{
-		this->numPorts = var.numPorts;
-		this->ports = var.ports;
+		this->port = var.port;
 		this->socketList = var.socketList;
 		this->servName = var.servName;
 		this->rootDir = var.rootDir;
@@ -45,17 +43,11 @@ Server &Server::operator=(const Server &var)
 
 void Server::print(void)
 {
-	std::cout << "num of ports = " << numPorts << std::endl;
 	std::cout << "server name = " << servName << std::endl;
 	std::cout << "root dir = " << rootDir << std::endl;
 	std::cout << "error dir = " << error404Dir << std::endl;
 	std::cout << "cgi path and ext  = " << cgiPath << " and " << cgiExt << std::endl;
-	std::cout << "ports are :" << std::endl;
-	for (int i = 0; i < numPorts; i++)
-	{
-		std::cout << ports.at(i) << std::endl;
-	}
-	
+	std::cout << "port is " << port << std::endl;
 }
 
 std::string Server::getServerName(void)
@@ -68,22 +60,14 @@ void Server::setServerName(std::string name)
 	this->servName = name;
 }
 
-void Server::addPort(int port)
+int Server::getPort(void)
 {
-	int i;
-	for (i = 0; i < numPorts; i++)
-	{
-		if (ports.at(i) == port)
-			break ;
-	}
-	if (i == numPorts)
-	{
-		if (i == 0)
-			ports.at(i) = port;
-		else
-			ports.push_back(port);
-		numPorts++;
-	}
+	return this->port;
+}
+
+void Server::setPort(int portNum)
+{
+	this->port = portNum;
 }
 
 void Server::setRootDir(std::string dir)
@@ -190,7 +174,7 @@ void Server::makeSocket(int port)
 {
 	listeningSocket newSocket(port);
     setnonblocking(newSocket.getServerFd()); // Set the listening socket to non-blocking mode
-    this->socketList.push_back(newSocket); // Add the new socket to the list
+    this->socketList = newSocket; // Add the new socket to the list
     std::cout << "Socket for port " << port << " created and added to the list." << std::endl;
 
 }
@@ -217,36 +201,16 @@ void Server::log(std::string text)
 	logfile.close();
 }
 
-void Server::makeSockets()
-{
-	if (numPorts == 0)
-		numPorts = 1;
-	for (int i = 0; i < numPorts; i++)
-	{
-		std::cout << "about to make a socket , port num = " << ports.at(i) << std::endl;
-		makeSocket(ports.at(i));
-	}
-}
-
 void Server::launch()
 {
-	if (numPorts == 0)
-		numPorts = 1;
-	for (int i = 0; i < numPorts; i++)
-	{
-		std::cout << "about to make a socket , port num = " << ports.at(i) << std::endl;
-		makeSocket(ports.at(i));
-	}
+	makeSocket(port);
 	std::vector<struct pollfd> fds;
 
-    // Add listening sockets to pollfd structure
-    for (size_t i = 0; i < socketList.size(); ++i) 
-	{
-        struct pollfd pfd;
-        pfd.fd = socketList[i].getServerFd();
-        pfd.events = POLLIN;
-        fds.push_back(pfd);
-    }
+    // Add listening socket to pollfd structure
+	struct pollfd pfd;
+	pfd.fd = socketList.getServerFd();
+	pfd.events = POLLIN;
+	fds.push_back(pfd);
 
     while (true) 
 	{
@@ -261,7 +225,7 @@ void Server::launch()
 		{
             if (fds[i].revents & POLLIN) 
 			{
-                if (fds[i].fd == socketList[i].getServerFd()) 
+                if (fds[i].fd == socketList.getServerFd()) 
 				{
                     // Accept new client connections
                     while (true) 
@@ -346,7 +310,7 @@ void Server::launch()
 							response = buildHTTPResponse(fileName, fileExt);
                         	send(fds[i].fd, response.c_str(), response.length(), 0);
 						}
-						std::cout << "prev message from this client was " << time(NULL) - socketList[0].getTimeOfLastMsg() << " seconds ago" << std::endl;
+						std::cout << "prev message from this client was " << time(NULL) - socketList.getTimeOfLastMsg() << " seconds ago" << std::endl;
                     }
                 }
             }
