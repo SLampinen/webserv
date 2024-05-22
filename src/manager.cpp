@@ -42,7 +42,12 @@ void Manager::run(std::string configFile)
 		serverList.at(i).makeSockets();
 		std::cout << "Sockets are made for " << i << std::endl;
 	}
-	serverList.at(0).print();
+	for (int i = 0; i < numOfServers; i++)
+	{
+		// serverList.at(i).launch();
+		serverList.at(i).print();
+	}
+	
 }
 
 int Manager::readConfig(std::string fileName)

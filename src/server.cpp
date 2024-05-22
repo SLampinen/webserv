@@ -353,7 +353,7 @@ void Server::launch()
         }
 		if (pollCount == 0)
 		{
-			// std::cout << "timeout" << std::endl;
+			std::cout << "timeout" << std::endl;
 		}
     }
 }
