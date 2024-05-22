@@ -90,6 +90,16 @@ void Server::setCGIPath(std::string path)
 	this->cgiPath = path;
 }
 
+std::string Server::getCGIPath(void)
+{
+	return this->cgiPath;
+}
+
+std::string Server::getCGIExt(void)
+{
+	return this->cgiExt;
+}
+
 std::string Server::getMIMEType(std::string fileExt) {
     if (fileExt.compare(".html") == 0 || fileExt.compare(".htm") == 0) 
 	{

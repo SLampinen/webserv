@@ -28,6 +28,8 @@ public:
 	std::string getServerName(void);
 
 	int getPort(void);
+	std::string getCGIExt(void);
+	std::string getCGIPath(void);
 
 	void makeSocket(int port);
 

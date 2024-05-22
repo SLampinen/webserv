@@ -136,11 +136,22 @@ void Manager::run(std::string configFile)
 						if (fileExt.compare(".php") == 0)
 						{
 							std::cout << "CGI" << std::endl;
-							// if (cgiExt.compare("") == 0 || cgiPath.compare("") == 0)
-							// {
-							// 	std::cout << "ERROR, CGI not set" << std::endl;
-							// }
-							// do CGI 
+							for (int j = 0; j < serverIndex.size(); j++)
+							{
+								if (serverIndex.at(j).first == fds[i].fd)
+								{
+							 		if (serverList.at(serverIndex.at(j).second).getCGIExt().empty())
+									{
+										std::cout << "ERROR, CGI not set" << std::endl;
+									}
+									else
+									{
+										std::cout << "Doing cgi" << std::endl;
+										//do CGI
+									}
+									break;
+								}
+							}
 						}
 						else
 						{
