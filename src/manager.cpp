@@ -13,6 +13,8 @@ Manager::~Manager()
 Manager::Manager(const Manager &var)
 {
 	this->numOfServers = var.numOfServers;
+	this->serverList = var.serverList;
+	this->serverIndex = var.serverIndex;
 }
 
 Manager &Manager::operator=(const Manager &var)
@@ -20,6 +22,8 @@ Manager &Manager::operator=(const Manager &var)
 	if (this != &var)
 	{
 		this->numOfServers = var.numOfServers;
+		this->serverList = var.serverList;
+		this->serverIndex = var.serverIndex;
 	}
 	return (*this);
 }
@@ -40,7 +44,6 @@ void Manager::run(std::string configFile)
 	std::vector <struct pollfd> fds;
 	for (int i = 0; i < numOfServers; i++)
 	{
-		// serverList.at(i).launch();
 		serverList.at(i).print();
 		serverList.at(i).makeSocket(serverList.at(i).getPort());
 		struct pollfd pfd;
@@ -85,7 +88,8 @@ void Manager::run(std::string configFile)
                         pfd.fd = clientFd;
                         pfd.events = POLLIN;
                         fds.push_back(pfd);
-                        std::cout << "New client connected" << std::endl;
+                        std::cout << "New client connected, fd = " << clientFd << " and i = " << i << std::endl;
+						serverIndex.push_back(std::make_pair(clientFd, i));
 					}
 				}
 				else
@@ -141,7 +145,14 @@ void Manager::run(std::string configFile)
 						else
 						{
 							std::cout << "here, making up a response, i = " << i << std::endl;
-							response = serverList.at(0).buildHTTPResponse(fileName, fileExt);
+							for (int j = 0; j < serverIndex.size(); j++)
+							{
+								if (serverIndex.at(j).first == fds[i].fd)
+								{
+									response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(fileName, fileExt);
+									break;
+								}
+							}
                         	send(fds[i].fd, response.c_str(), response.length(), 0);
 						}
 						// std::cout << "prev message from this client was " << time(NULL) - socketList.getTimeOfLastMsg() << " seconds ago" << std::endl;
