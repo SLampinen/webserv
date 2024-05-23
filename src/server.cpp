@@ -132,9 +132,23 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	// if empty, aka front page
 	if (fileName.empty())
 	{
-		// responseStream << "HTTP/1.1 200 OK\r\n" << "Content-Type: text/plain\r\n" << "\r\n" << "Front page";
-		responseStream << "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nFront page";
-		response = responseStream.str();
+		std::string fileFull;
+		fileFull.append(rootDir);
+		fileFull.append("home.html");
+		std::cout << "the front page is " << fileFull << std::endl;
+		int fileFd = open(fileFull.data(), O_RDONLY);
+		std::ifstream file(fileFull);
+		if (file.is_open() == 0)
+		{
+			responseStream << "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nFront page";
+			response = responseStream.str();
+			return response;
+		}
+		std::getline(file, buffer, '\0');
+		headerStream << "HTTP/1.1 200 OK\r\n" << "Content-Length: " << buffer.size() << "\r\n" << "\r\n";
+		header = headerStream.str();
+		response.append(header);
+		response.append(buffer);
 		return response;
 	}
 

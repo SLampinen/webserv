@@ -33,6 +33,63 @@ void setNonBlocking(int sockfd) {
     fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
 }
 
+void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fds, int i)
+{
+	std::string response;
+	size_t start = receivedData.find('/');
+	size_t end = receivedData.find(' ', start);
+	std::string file = receivedData.substr(start + 1, end - start - 1);
+	std::string fileExt = ".html";
+	std::string fileName;
+	if (file.find('.') != std::string::npos)
+	{
+		fileExt = file.substr(file.find('.'));
+		fileName = file.substr(0, file.find('.'));
+	}
+	else
+		fileName = file;
+	std::cout << "File ext = " << fileExt << std::endl;
+	if (fileExt.compare(".php") == 0)
+	{
+		std::cout << "CGI" << std::endl;
+		for (int j = 0; j < serverIndex.size(); j++)
+		{
+			if (serverIndex.at(j).first == fds[i].fd)
+			{
+				if (serverList.at(serverIndex.at(j).second).getCGIExt().empty() || serverList.at(serverIndex.at(j).second).getCGIPath().empty())
+				{
+					std::cout << "ERROR, CGI not set" << std::endl;
+					std::stringstream responseStream;
+					responseStream << "HTTP/1.1 418 I'm a teapot\r\n" << "Content-Length: 17\r\n" << "\r\n" << "CGI not available";
+					response = responseStream.str();
+				}
+				else
+				{
+					std::cout << "Doing cgi" << std::endl;
+					//do CGI
+				}
+				break;
+			}
+		}
+		std::cout << "Sending response : " << std::endl << response << std::endl;
+		send(fds[i].fd, response.c_str(), response.length(), 0);
+	}
+	else
+	{
+		std::cout << "here, making up a response, i = " << i << std::endl;
+		for (int j = 0; j < serverIndex.size(); j++)
+		{
+			if (serverIndex.at(j).first == fds[i].fd)
+			{
+				serverList.at(serverIndex.at(j).second).log(receivedData);
+				response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(fileName, fileExt);
+				break;
+			}
+		}
+		send(fds[i].fd, response.c_str(), response.length(), 0);
+	}
+}
+
 void Manager::run(std::string configFile)
 {
 	if (readConfig(configFile) == 0)
@@ -120,58 +177,24 @@ void Manager::run(std::string configFile)
                         // Process the received data
 						std::string response;
                         std::string receivedData(buffer, bytesRead);
-						// log(receivedData);
-						size_t start = receivedData.find('/');
-						size_t end = receivedData.find(' ', start);
-                        std::string file = receivedData.substr(start + 1, end - start - 1);
-						std::string fileExt = ".html";
-						std::string fileName;
-						if (file.find('.') != std::string::npos)
+						if (receivedData.find("GET") != std::string::npos)
 						{
-							fileExt = file.substr(file.find('.'));
-							fileName = file.substr(0, file.find('.'));
+							std::cout << "GETTING" << std::endl;
+							handleGet(receivedData, fds, i);
 						}
-						else
-							fileName = file;
-						if (fileExt.compare(".php") == 0)
+						if (receivedData.find("POST") != std::string::npos)
 						{
-							std::cout << "CGI" << std::endl;
-							for (int j = 0; j < serverIndex.size(); j++)
-							{
-								if (serverIndex.at(j).first == fds[i].fd)
-								{
-							 		if (serverList.at(serverIndex.at(j).second).getCGIExt().empty())
-									{
-										std::cout << "ERROR, CGI not set" << std::endl;
-									}
-									else
-									{
-										std::cout << "Doing cgi" << std::endl;
-										//do CGI
-									}
-									break;
-								}
-							}
+							std::cout << "POSTING" << std::endl;
 						}
-						else
+						if (receivedData.find("DELETE") != std::string::npos)
 						{
-							std::cout << "here, making up a response, i = " << i << std::endl;
-							for (int j = 0; j < serverIndex.size(); j++)
-							{
-								if (serverIndex.at(j).first == fds[i].fd)
-								{
-									response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(fileName, fileExt);
-									break;
-								}
-							}
-                        	send(fds[i].fd, response.c_str(), response.length(), 0);
+							std::cout << "DELETING" << std::endl;
 						}
 						// std::cout << "prev message from this client was " << time(NULL) - socketList.getTimeOfLastMsg() << " seconds ago" << std::endl;
                     }
 				}
 			}
 		}
-		
 	}
 	
 }
