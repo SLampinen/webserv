@@ -78,8 +78,3 @@ int listeningSocket::getServerFd()
 {
 	return this->serverFd;
 }
-
-time_t listeningSocket::getTimeOfLastMsg()
-{
-	return this->timeOfLastMsg;
-}

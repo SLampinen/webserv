@@ -20,7 +20,6 @@ public:
 	struct sockaddr_in getAddress();
 	int getServerFd();
 	int getPortNum();
-	time_t getTimeOfLastMsg();
 };
 
 

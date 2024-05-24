@@ -334,7 +334,6 @@ void Server::launch()
 							response = buildHTTPResponse(fileName, fileExt);
                         	send(fds[i].fd, response.c_str(), response.length(), 0);
 						}
-						std::cout << "prev message from this client was " << time(NULL) - socketList.getTimeOfLastMsg() << " seconds ago" << std::endl;
                     }
                 }
             }
