@@ -263,10 +263,7 @@ void Manager::run(std::string configFile)
 					}
 				}
 			}
-			if (fds[i].fd == serverList[i].socketList.getServerFd())
-			{
-			}
-			else
+			if (fds[i].fd != serverList[i].socketList.getServerFd())
 			{
 				if (time(NULL) - connectionTime.at(i).second > 5)
 				{
@@ -276,8 +273,8 @@ void Manager::run(std::string configFile)
                     fds.erase(fds.begin() + i);
 					connectionTime.erase(connectionTime.begin() + i);
 				}
-				else
-					std::cout << "Still has time" << std::endl;
+				// else
+					// std::cout << "Still has time" << std::endl;
 			}
 		}
 	}
@@ -301,9 +298,9 @@ int Manager::readConfig(std::string fileName)
 	while (1)
 	{
 		std::getline(configFile, line);
-		std::cout << line << std::endl;
-		if (!line.compare("\0") || configFile.eof())
+		if (configFile.eof())
 			break;
+		// std::cout << "line is : " << line << std::endl;
 		//remove comments
 		if (line.find("#") != std::string::npos)
 		{
@@ -312,7 +309,7 @@ int Manager::readConfig(std::string fileName)
 		}
 		if (line.find("server {") != std::string::npos)
 		{
-			std::cout << "start of server block" << std::endl;
+			// std::cout << "start of server block" << std::endl;
 			std::string serverName = "server.num";
 			serverName.append(std::to_string(numOfServers));
 			Server newServer;
@@ -322,7 +319,7 @@ int Manager::readConfig(std::string fileName)
 			while (1)
 			{
 				std::getline(configFile, line);
-				// std::cout << line << std::endl;
+				// std::cout << "line in block is : " << line << std::endl;
 				if (!line.compare("\0") || configFile.eof())
 					break;
 				if (line.find("#") != std::string::npos)
