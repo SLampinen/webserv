@@ -15,7 +15,7 @@ Manager::Manager(const Manager &var)
 	this->numOfServers = var.numOfServers;
 	this->serverList = var.serverList;
 	this->serverIndex = var.serverIndex;
-	this->connectionTime = var.connectionTime;
+	this->timers = var.timers;
 	this->data = var.data;
 }
 
@@ -26,7 +26,7 @@ Manager &Manager::operator=(const Manager &var)
 		this->numOfServers = var.numOfServers;
 		this->serverList = var.serverList;
 		this->serverIndex = var.serverIndex;
-		this->connectionTime = var.connectionTime;
+		this->timers = var.timers;
 		this->data = var.data;
 	}
 	return (*this);
@@ -58,7 +58,13 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 		end = fileExt.find("?");
 		fileExt = fileExt.substr(0, end);
 	}
-	if (fileExt.compare(".php") == 0)
+	int index;
+	for (index = 0; index < serverIndex.size(); index++)
+	{
+		if (serverIndex.at(index).first == fds[i].fd)
+			break;
+	}
+	if (fileExt.compare(serverList.at(serverIndex.at(index).second).getCGIExt()) == 0)
 	{
 		std::cout << "CGI" << std::endl;
 		for (int j = 0; j < serverIndex.size(); j++)
@@ -92,18 +98,10 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 			{
 				serverList.at(serverIndex.at(j).second).log(receivedData);
 				response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(fileName, fileExt);
-				if ((serverList.at(serverIndex.at(j).second).getClientBodySize() > 0) && (response.length() > serverList.at(serverIndex.at(j).second).getClientBodySize()))
-				{
-					std::stringstream responseStream;
-					std::cout << "response too large" << std::endl;
-					responseStream << "HTTP/1.1 413 Request Entity Too Large\r\n" << "Content-Length: 25\r\n" << "\r\n" << "Request Entity Too Large";
-					response = "";
-					response = responseStream.str();
-				}
 				break;
 			}
 		}
-			send(fds[i].fd, response.c_str(), response.length(), 0);
+		send(fds[i].fd, response.c_str(), response.length(), 0);
 	}
 
 }
@@ -135,10 +133,10 @@ void Manager::handlePost(std::string receivedData, std::vector <struct pollfd> f
 			std::cout << data.at(i).data() << std::endl;
 		}
 	}
-	// the following just send bogus response to see if ti works
+	// the following just send bogus response to see if it works
 		std::string response;
 		std::string buffer;
-		std::ifstream file("/Users/slampine/Projects/webserv/www/home.html");
+		std::ifstream file("www/result.html");
 		std::getline(file, buffer, '\0');
 		std::stringstream headerStream;
 		headerStream << "HTTP/1.1 200 OK\r\n" << "Content-Length: " << buffer.size() << "\r\n" << "\r\n";
@@ -161,16 +159,25 @@ void Manager::run(std::string configFile)
 		return ;
 	}
 	std::cout << "--------------------------------------------------" << std::endl << "number of servers = " << numOfServers << std::endl;
-	std::vector <struct pollfd> fds;
+	// std::vector <struct pollfd> fds;
 	for (int i = 0; i < numOfServers; i++)
 	{
 		serverList.at(i).print();
+		// for (int k = 0; k < serverList.at(i).getNumOfPorts(); k++)
+		// {
+		// 	serverList.at(i).makeSocket(serverList.at(i).getNthPort(k));
+		// 	struct pollfd pfd;
+		// 	pfd.fd = serverList.at(i).listeners.at(k).getServerFd();
+		// 	pfd.events = POLLIN;
+		// 	fds.push_back(pfd);
+		// 	timers.push_back(std::make_pair(pfd.fd, 0));
+		// }
 		serverList.at(i).makeSocket(serverList.at(i).getPort());
 		struct pollfd pfd;
-		pfd.fd = serverList.at(i).socketList.getServerFd();
+		pfd.fd = serverList.at(i).listener.getServerFd();
 		pfd.events = POLLIN;
 		fds.push_back(pfd);
-		connectionTime.push_back(std::make_pair(i, 0));
+		timers.push_back(std::make_pair(pfd.fd, 0));
 	}
 	while (true)
 	{
@@ -184,7 +191,7 @@ void Manager::run(std::string configFile)
 		{
 			if (fds[i].revents & POLLIN)
 			{
-				if (fds[i].fd == serverList[i].socketList.getServerFd())
+				if (fds[i].fd == serverList[i].listener.getServerFd())
 				{
 					std::cout << "new connection" << std::endl;
 					while (true)
@@ -211,7 +218,7 @@ void Manager::run(std::string configFile)
                         fds.push_back(pfd);
                         std::cout << "New client connected, fd = " << clientFd << " and i = " << i << std::endl;
 						serverIndex.push_back(std::make_pair(clientFd, i));
-						connectionTime.push_back(std::make_pair(clientFd, time(NULL)));
+						timers.push_back(std::make_pair(pfd.fd, time(NULL)));
 					}
 				}
 				else
@@ -235,7 +242,14 @@ void Manager::run(std::string configFile)
                         std::cout << "Client disconnected" << std::endl;
                         close(fds[i].fd);
                         fds.erase(fds.begin() + i);
-						connectionTime.erase(connectionTime.begin() + i);
+						for (int index = 0; index < timers.size(); index++)
+						{
+							if (timers.at(index).first == fds[i].fd)
+							{
+								timers.erase(timers.begin() + index);
+								break;
+							}
+						}
                         --i;
 					}
 					else 
@@ -258,24 +272,31 @@ void Manager::run(std::string configFile)
 							std::cout << "DELETING" << std::endl;
 							handleDelete(receivedData, fds, i);
 						}
-						std::cout << "Prev message from this came " << time(NULL) - connectionTime.at(i).second << " seconds ago" << std::endl;
-						connectionTime.at(i).second = time(NULL);
+						std::cout << "Prev message from this (fd " << timers.at(i).first << ") came " << time(NULL) - timers.at(i).second << " seconds ago" << std::endl;
+						timers.at(i).second = time(NULL);
 					}
 				}
 			}
-			if (fds[i].fd != serverList[i].socketList.getServerFd())
-			{
-				if (time(NULL) - connectionTime.at(i).second > 5)
-				{
-					std::cout << "time now = " << time(NULL) << std::endl;
-					std::cout << "Connection timeout for " << i << std::endl;
-					close(fds[i].fd);
-                    fds.erase(fds.begin() + i);
-					connectionTime.erase(connectionTime.begin() + i);
-				}
-				// else
-					// std::cout << "Still has time" << std::endl;
-			}
+			// if (fds[i].fd != serverList[i].listener.getServerFd())
+			// {
+			// 	if (time(NULL) - timers.at(i).second > 5)
+			// 	{
+			// 		std::cout << "time now = " << time(NULL) << std::endl;
+			// 		std::cout << "Connection timeout for " << fds[i].fd << std::endl;
+			// 		close(fds[i].fd);
+            //         fds.erase(fds.begin() + i);
+			// 		for (int index = 0; index < timers.size(); index++)
+			// 		{
+			// 			if (timers.at(index).first == fds[i].fd)
+			// 			{
+			// 				timers.erase(timers.begin() + index);
+			// 				break;
+			// 			}
+			// 		}
+			// 	}
+			// 	// else
+			// 		// std::cout << "Still has time" << std::endl;
+			// }
 		}
 	}
 	
@@ -309,7 +330,7 @@ int Manager::readConfig(std::string fileName)
 		}
 		if (line.find("server {") != std::string::npos)
 		{
-			// std::cout << "start of server block" << std::endl;
+			std::cout << "----------start of server block----------" << std::endl;
 			std::string serverName = "server.num";
 			serverName.append(std::to_string(numOfServers));
 			Server newServer;
@@ -319,8 +340,8 @@ int Manager::readConfig(std::string fileName)
 			while (1)
 			{
 				std::getline(configFile, line);
-				// std::cout << "line in block is : " << line << std::endl;
-				if (!line.compare("\0") || configFile.eof())
+				std::cout << "line in block is : " << line << std::endl;
+				if (configFile.eof())
 					break;
 				if (line.find("#") != std::string::npos)
 				{
@@ -346,10 +367,11 @@ int Manager::readConfig(std::string fileName)
 					wip = line.substr(start);
 					end = wip.find_first_not_of("0123456789");
 					wip = wip.substr(0, end);
-					if (!wip.empty() && newServer.getPort() == DEFAULTPORT)
+					if (!wip.empty())
 					{
 						std::cout << "setting port" << std::endl;
 						newServer.setPort(std::stoi(wip));
+						newServer.addPort(std::stoi(wip));
 					}
 				}
 				if (line.find("root") != std::string::npos)
@@ -394,7 +416,6 @@ int Manager::readConfig(std::string fileName)
 				}
 				
 			}
-			newServer.print();
 			serverList.push_back(newServer);
 			std::cout << "end of server block" <<std::endl;
 		}

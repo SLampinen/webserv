@@ -10,7 +10,9 @@ private:
 	int numOfServers;
 	std::vector<Server> serverList;
 	std::vector<std::pair<int, int> > serverIndex;
-	std::vector<std::pair<int, int> > connectionTime;
+	std::vector<struct pollfd> fds;
+	std::vector<std::pair<int, int> > timers;
+	// we may not need this in full project
 	std::vector<std::string> data;
 public:
 	Manager();

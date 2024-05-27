@@ -12,6 +12,8 @@ class Server
 {
 private:
 	int port;
+	int numOfPorts;
+	std::vector<int> ports;
 	std::string servName;
 	std::string rootDir;
 	std::string error404Dir;
@@ -23,17 +25,18 @@ public:
 	~Server();
 	Server(const Server &var);
 	Server& operator=(const Server &var);
-	void launch();
 	std::string getMIMEType(std::string fileExt);
 	std::string buildHTTPResponse(std::string fileName, std::string fileExt);
 	std::string getServerName(void);
 
 	int getPort(void);
+	int getNthPort(int n);
 	std::string getCGIExt(void);
 	std::string getCGIPath(void);
-	int getClientBodySize(void);
+	int getNumOfPorts(void);
 
 	void makeSocket(int port);
+	void addPort(int port);
 
 	void setPort(int portNum);
 	void setServerName(std::string name);
@@ -46,7 +49,8 @@ public:
 	void log(std::string text);
 	void print(void);
 
-	listeningSocket socketList;
+	listeningSocket listener;
+	std::vector<listeningSocket> listeners;
 };
 
 #endif
