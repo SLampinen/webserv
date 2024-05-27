@@ -17,6 +17,7 @@ private:
 	std::string error404Dir;
 	std::string cgiExt;
 	std::string cgiPath;
+	int client_max_body_size;
 public:
 	Server();
 	~Server();
@@ -30,6 +31,7 @@ public:
 	int getPort(void);
 	std::string getCGIExt(void);
 	std::string getCGIPath(void);
+	int getClientBodySize(void);
 
 	void makeSocket(int port);
 
@@ -39,6 +41,7 @@ public:
 	void setErrorDir(std::string dir);
 	void setCGIExt(std::string ext);
 	void setCGIPath(std::string path);
+	void setClientBodySize(std::string size);
 
 	void log(std::string text);
 	void print(void);

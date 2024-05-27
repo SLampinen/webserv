@@ -8,6 +8,7 @@ Server::Server()
 	this->error404Dir = DEFAULT404DIR;
 	this->cgiExt = "";
 	this->cgiPath = "";
+	this->client_max_body_size = 0;
 }
 
 Server::~Server()
@@ -24,6 +25,7 @@ Server::Server(const Server &var)
 	this->error404Dir = var.error404Dir;
 	this->cgiExt = var.cgiExt;
 	this->cgiPath = var.cgiPath;
+	this->client_max_body_size = var.client_max_body_size;
 }
 
 Server &Server::operator=(const Server &var)
@@ -37,6 +39,7 @@ Server &Server::operator=(const Server &var)
 		this->error404Dir = var.error404Dir;
 		this->cgiExt = var.cgiExt;
 		this->cgiPath = var.cgiPath;
+		this->client_max_body_size = var.client_max_body_size;
 	}
 	return (*this);
 }
@@ -90,6 +93,11 @@ void Server::setCGIPath(std::string path)
 	this->cgiPath = path;
 }
 
+void Server::setClientBodySize(std::string size)
+{
+	this->client_max_body_size = std::stoi(size);
+}
+
 std::string Server::getCGIPath(void)
 {
 	return this->cgiPath;
@@ -98,6 +106,11 @@ std::string Server::getCGIPath(void)
 std::string Server::getCGIExt(void)
 {
 	return this->cgiExt;
+}
+
+int Server::getClientBodySize(void)
+{
+	return this->client_max_body_size;
 }
 
 std::string Server::getMIMEType(std::string fileExt) {

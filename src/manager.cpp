@@ -92,10 +92,18 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 			{
 				serverList.at(serverIndex.at(j).second).log(receivedData);
 				response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(fileName, fileExt);
+				if ((serverList.at(serverIndex.at(j).second).getClientBodySize() > 0) && (response.length() > serverList.at(serverIndex.at(j).second).getClientBodySize()))
+				{
+					std::stringstream responseStream;
+					std::cout << "response too large" << std::endl;
+					responseStream << "HTTP/1.1 413 Request Entity Too Large\r\n" << "Content-Length: 25\r\n" << "\r\n" << "Request Entity Too Large";
+					response = "";
+					response = responseStream.str();
+				}
 				break;
 			}
 		}
-		send(fds[i].fd, response.c_str(), response.length(), 0);
+			send(fds[i].fd, response.c_str(), response.length(), 0);
 	}
 
 }
@@ -378,6 +386,14 @@ int Manager::readConfig(std::string fileName)
 					end = wip.find(";");
 					wip = wip.substr(0, end);
 					newServer.setCGIPath(wip);
+				}
+				if (line.find("client_max_body_size") != std::string::npos)
+				{
+					start = line.find("client_max_body_size") + 21;
+					wip = line.substr(start);
+					end = wip.find(";");
+					wip = wip.substr(0, end);
+					newServer.setClientBodySize(wip);
 				}
 				
 			}
