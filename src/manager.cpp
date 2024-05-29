@@ -165,13 +165,11 @@ void Manager::run(std::string configFile)
 		serverList.at(i).print();
 		for (int k = 0; k < serverList.at(i).getNumOfPorts(); k++)
 		{
-			std::cout << "doing this " << std::endl;
-			serverList.at(i).makeSocket(serverList.at(i).getNthPort(k));
 			struct pollfd pfd;
 			pfd.fd = serverList.at(i).listeners.at(k).getServerFd();
 			pfd.events = POLLIN;
 			fds.push_back(pfd);
-			timers.push_back(std::make_pair(pfd.fd, 0));
+			// timers.push_back(std::make_pair(pfd.fd, 0));
 		}
 		// serverList.at(i).makeSocket(serverList.at(i).getPort());
 		// struct pollfd pfd;
@@ -371,7 +369,7 @@ int Manager::readConfig(std::string fileName)
 					if (!wip.empty())
 					{
 						std::cout << "setting port" << std::endl;
-						// newServer.setPort(std::stoi(wip));
+						newServer.setPort(std::stoi(wip));
 						newServer.addPort(std::stoi(wip));
 					}
 				}
@@ -417,6 +415,7 @@ int Manager::readConfig(std::string fileName)
 				}
 				
 			}
+			newServer.makeSocketList();
 			serverList.push_back(newServer);
 			std::cout << "end of server block" <<std::endl;
 		}

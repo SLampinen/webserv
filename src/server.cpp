@@ -244,9 +244,8 @@ void Server::makeSocket(int portNum)
 {
 	listeningSocket newSocket(portNum);
     setnonblocking(newSocket.getServerFd()); // Set the listening socket to non-blocking mode
-    // this->listener = newSocket; // Add the new socket to the list
-	listeners.push_back(newSocket);
-    std::cout << "Socket for port " << port << " created and added to the list." << std::endl;
+    this->listener = newSocket; // Add the new socket to the list
+    std::cout << "Socket for port " << portNum << " created and added to the list." << std::endl;
 
 }
 
@@ -300,4 +299,14 @@ int Server::getNumOfPorts(void)
 int Server::getNthPort(int n)
 {
 	return this->ports.at(n);
+}
+
+void Server::makeSocketList()
+{
+	for (int i = 0; i < numOfPorts; i++)
+	{
+		listeningSocket newSocket(ports.at(i));
+		setnonblocking(newSocket.getServerFd());
+		listeners.push_back(newSocket);
+	}
 }

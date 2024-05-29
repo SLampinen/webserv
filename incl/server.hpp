@@ -36,6 +36,7 @@ public:
 	int getNumOfPorts(void);
 
 	void makeSocket(int portNum);
+	void makeSocketList(void);
 	void addPort(int port);
 
 	void setPort(int portNum);
