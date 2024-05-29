@@ -66,32 +66,32 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 	}
 	std::cout << "HERE!" << std::endl;
 	std::cout << serverList.size() << " and " << serverIndex.size() << " and " <<index << std::endl;
-	if (fileExt.compare(serverList.at(serverIndex.at(index).second).getCGIExt()) == 0)
-	{
-		std::cout << "CGI" << std::endl;
-		for (int j = 0; j < serverIndex.size(); j++)
-		{
-			if (serverIndex.at(j).first == fds[i].fd)
-			{
-				if (serverList.at(serverIndex.at(j).second).getCGIExt().empty() || serverList.at(serverIndex.at(j).second).getCGIPath().empty())
-				{
-					std::cout << "ERROR, CGI not set" << std::endl;
-					std::stringstream responseStream;
-					responseStream << "HTTP/1.1 418 I'm a teapot\r\n" << "Content-Length: 17\r\n" << "\r\n" << "CGI not available";
-					response = responseStream.str();
-				}
-				else
-				{
-					std::cout << "Doing cgi" << std::endl;
-					//do CGI
-				}
-				break;
-			}
-		}
-		std::cout << "Sending response : " << std::endl << response << std::endl;
-		send(fds[i].fd, response.c_str(), response.length(), 0);
-	}
-	else
+	// if (fileExt.compare(serverList.at(serverIndex.at(index).second).getCGIExt()) == 0)
+	// {
+	// 	std::cout << "CGI" << std::endl;
+	// 	for (int j = 0; j < serverIndex.size(); j++)
+	// 	{
+	// 		if (serverIndex.at(j).first == fds[i].fd)
+	// 		{
+	// 			if (serverList.at(serverIndex.at(j).second).getCGIExt().empty() || serverList.at(serverIndex.at(j).second).getCGIPath().empty())
+	// 			{
+	// 				std::cout << "ERROR, CGI not set" << std::endl;
+	// 				std::stringstream responseStream;
+	// 				responseStream << "HTTP/1.1 418 I'm a teapot\r\n" << "Content-Length: 17\r\n" << "\r\n" << "CGI not available";
+	// 				response = responseStream.str();
+	// 			}
+	// 			else
+	// 			{
+	// 				std::cout << "Doing cgi" << std::endl;
+	// 				//do CGI
+	// 			}
+	// 			break;
+	// 		}
+	// 	}
+	// 	std::cout << "Sending response : " << std::endl << response << std::endl;
+	// 	send(fds[i].fd, response.c_str(), response.length(), 0);
+	// }
+	// else
 	{
 		std::cout << "here, making up a response, i = " << i << std::endl;
 		for (int j = 0; j < serverIndex.size(); j++)
@@ -218,7 +218,8 @@ void Manager::run(std::string configFile)
                                 clientPfd.fd = clientFd;
                                 clientPfd.events = POLLIN;
                                 fds.push_back(clientPfd);
-								serverIndex.push_back(std::make_pair(clientFd, i));
+								serverIndex.push_back(std::make_pair(clientFd, j));
+								std::cout << "here, i, j, k are "<< i << " " << j << " " << k << std::endl;
                             }
                             newConnection = true;
                             break;
