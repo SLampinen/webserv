@@ -35,7 +35,7 @@ public:
 	std::string getCGIPath(void);
 	int getNumOfPorts(void);
 
-	void makeSocket(int port);
+	void makeSocket(int portNum);
 	void addPort(int port);
 
 	void setPort(int portNum);

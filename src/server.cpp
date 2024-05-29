@@ -240,12 +240,12 @@ void setnonblocking(int sockfd) {
     fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
 }
 
-void Server::makeSocket(int port)
+void Server::makeSocket(int portNum)
 {
-	listeningSocket newSocket(port);
+	listeningSocket newSocket(portNum);
     setnonblocking(newSocket.getServerFd()); // Set the listening socket to non-blocking mode
-    this->listener = newSocket; // Add the new socket to the list
-	// listeners.push_back(newSocket);
+    // this->listener = newSocket; // Add the new socket to the list
+	listeners.push_back(newSocket);
     std::cout << "Socket for port " << port << " created and added to the list." << std::endl;
 
 }

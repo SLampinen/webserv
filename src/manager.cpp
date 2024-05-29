@@ -163,21 +163,22 @@ void Manager::run(std::string configFile)
 	for (int i = 0; i < numOfServers; i++)
 	{
 		serverList.at(i).print();
-		// for (int k = 0; k < serverList.at(i).getNumOfPorts(); k++)
-		// {
-		// 	serverList.at(i).makeSocket(serverList.at(i).getNthPort(k));
-		// 	struct pollfd pfd;
-		// 	pfd.fd = serverList.at(i).listeners.at(k).getServerFd();
-		// 	pfd.events = POLLIN;
-		// 	fds.push_back(pfd);
-		// 	timers.push_back(std::make_pair(pfd.fd, 0));
-		// }
-		serverList.at(i).makeSocket(serverList.at(i).getPort());
-		struct pollfd pfd;
-		pfd.fd = serverList.at(i).listener.getServerFd();
-		pfd.events = POLLIN;
-		fds.push_back(pfd);
-		timers.push_back(std::make_pair(pfd.fd, 0));
+		for (int k = 0; k < serverList.at(i).getNumOfPorts(); k++)
+		{
+			std::cout << "doing this " << std::endl;
+			serverList.at(i).makeSocket(serverList.at(i).getNthPort(k));
+			struct pollfd pfd;
+			pfd.fd = serverList.at(i).listeners.at(k).getServerFd();
+			pfd.events = POLLIN;
+			fds.push_back(pfd);
+			timers.push_back(std::make_pair(pfd.fd, 0));
+		}
+		// serverList.at(i).makeSocket(serverList.at(i).getPort());
+		// struct pollfd pfd;
+		// pfd.fd = serverList.at(i).listener.getServerFd();
+		// pfd.events = POLLIN;
+		// fds.push_back(pfd);
+		// timers.push_back(std::make_pair(pfd.fd, 0));
 	}
 	while (true)
 	{
@@ -370,7 +371,7 @@ int Manager::readConfig(std::string fileName)
 					if (!wip.empty())
 					{
 						std::cout << "setting port" << std::endl;
-						newServer.setPort(std::stoi(wip));
+						// newServer.setPort(std::stoi(wip));
 						newServer.addPort(std::stoi(wip));
 					}
 				}
