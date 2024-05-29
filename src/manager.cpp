@@ -64,6 +64,8 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 		if (serverIndex.at(index).first == fds[i].fd)
 			break;
 	}
+	std::cout << "HERE!" << std::endl;
+	std::cout << serverList.size() << " and " << serverIndex.size() << " and " <<index << std::endl;
 	if (fileExt.compare(serverList.at(serverIndex.at(index).second).getCGIExt()) == 0)
 	{
 		std::cout << "CGI" << std::endl;
@@ -151,154 +153,115 @@ void Manager::handleDelete(std::string receivedData, std::vector <struct pollfd>
 
 }
 
-void Manager::run(std::string configFile)
+void Manager::run(std::string configFile) 
 {
-	if (readConfig(configFile) == 0)
+    if (readConfig(configFile) == 0) 
 	{
-		std::cout << "ERROR reading config file" << std::endl;
-		return ;
-	}
-	std::cout << "--------------------------------------------------" << std::endl << "number of servers = " << numOfServers << std::endl;
-	// std::vector <struct pollfd> fds;
-	for (int i = 0; i < numOfServers; i++)
+        std::cerr << "ERROR reading config file" << std::endl;
+        return;
+    }
+    std::cout << "--------------------------------------------------" << std::endl
+              << "number of servers = " << numOfServers << std::endl;
+
+    for (int i = 0; i < numOfServers; i++) 
 	{
-		serverList.at(i).print();
-		for (int k = 0; k < serverList.at(i).getNumOfPorts(); k++)
+        serverList.at(i).print();
+        for (int k = 0; k < serverList.at(i).getNumOfPorts(); k++) 
 		{
-			struct pollfd pfd;
-			pfd.fd = serverList.at(i).listeners.at(k).getServerFd();
-			pfd.events = POLLIN;
-			fds.push_back(pfd);
-			// timers.push_back(std::make_pair(pfd.fd, 0));
-		}
-		// serverList.at(i).makeSocket(serverList.at(i).getPort());
-		// struct pollfd pfd;
-		// pfd.fd = serverList.at(i).listener.getServerFd();
-		// pfd.events = POLLIN;
-		// fds.push_back(pfd);
-		// timers.push_back(std::make_pair(pfd.fd, 0));
-	}
-	while (true)
+            struct pollfd pfd;
+            pfd.fd = serverList.at(i).listeners.at(k).getServerFd();
+            pfd.events = POLLIN;
+            fds.push_back(pfd);
+        }
+    }
+    while (true) 
 	{
         int pollCount = poll(fds.data(), fds.size(), POLL_TIMEOUT);
-		if (pollCount < 0)
+        if (pollCount < 0) 
 		{
             std::cerr << "Poll error: " << strerror(errno) << std::endl;
             continue;
-		}
-		for (size_t i = 0; i < fds.size(); i++)
+        }
+        for (size_t i = 0; i < fds.size(); i++) 
 		{
-			if (fds[i].revents & POLLIN)
+            if (fds[i].revents & POLLIN) 
 			{
-				if (fds[i].fd == serverList[i].listener.getServerFd())
+                // Iterate over each server and its listeners to find the matching serverFd
+                bool newConnection = false;
+                for (int j = 0; j < numOfServers; j++) 
 				{
-					std::cout << "new connection" << std::endl;
-					while (true)
+                    for (int k = 0; k < serverList.at(j).getNumOfPorts(); k++) 
 					{
-                        struct sockaddr_in clientAddr;
-						socklen_t clientAddrLen = sizeof(clientAddr);
-                        int clientFd = accept(fds[i].fd, (struct sockaddr*)&clientAddr, &clientAddrLen);
-						if (clientFd < 0)
+                        if (fds[i].fd == serverList.at(j).listeners.at(k).getServerFd()) 
 						{
-                            if (errno == EWOULDBLOCK || errno == EAGAIN) 
+                            std::cout << "new connection" << std::endl;
+                            while (true) 
 							{
-                                // No more clients to accept
-                                break;
-                            } else 
-							{
-                                std::cerr << "Accept error: " << strerror(errno) << std::endl;
-                                break;
+                                struct sockaddr_in clientAddr;
+                                socklen_t clientAddrLen = sizeof(clientAddr);
+                                int clientFd = accept(fds[i].fd, (struct sockaddr*)&clientAddr, &clientAddrLen);
+                                if (clientFd < 0) 
+								{
+                                    if (errno == EWOULDBLOCK || errno == EAGAIN) 
+									{
+                                        // No more clients to accept
+                                        break;
+                                    } else 
+									{
+                                        std::cerr << "Accept error: " << strerror(errno) << std::endl;
+                                        break;
+                                    }
+                                }
+                                setNonBlocking(clientFd);
+                                // Add the new client socket to the poll list
+                                struct pollfd clientPfd;
+                                clientPfd.fd = clientFd;
+                                clientPfd.events = POLLIN;
+                                fds.push_back(clientPfd);
+								serverIndex.push_back(std::make_pair(clientFd, i));
                             }
-						}
-						setNonBlocking(clientFd);
-                        struct pollfd pfd;
-                        pfd.fd = clientFd;
-                        pfd.events = POLLIN;
-                        fds.push_back(pfd);
-                        std::cout << "New client connected, fd = " << clientFd << " and i = " << i << std::endl;
-						serverIndex.push_back(std::make_pair(clientFd, i));
-						timers.push_back(std::make_pair(pfd.fd, time(NULL)));
-					}
-				}
-				else
-				{
-					char buffer[1024];
-                    int bytesRead = recv(fds[i].fd, buffer, sizeof(buffer), 0);
-					if (bytesRead < 0)
+                            newConnection = true;
+                            break;
+                        }
+                    }
+                    if (newConnection) break;
+                }
+                if (!newConnection) {
+                    // Handle communication with the client
+                    char buffer[1024];
+                    int bytesReceived = recv(fds[i].fd, buffer, sizeof(buffer), 0);
+                    if (bytesReceived < 0)
 					{
-						// is this legal? can we check errno here? or do we need some other way to do this?
-                        if (errno != EWOULDBLOCK && errno != EAGAIN) 
+                        if (errno == EWOULDBLOCK || errno == EAGAIN)
+						{
+                            // No data available to read
+                            continue;
+                        } else
 						{
                             std::cerr << "Recv error: " << strerror(errno) << std::endl;
                             close(fds[i].fd);
                             fds.erase(fds.begin() + i);
-                            --i;
+                            i--; // Adjust index after erasing
+                            continue;
                         }
-					}
-					else if (bytesRead == 0)
+                    } else if (bytesReceived == 0)
 					{
-                        // Connection closed
-                        std::cout << "Client disconnected" << std::endl;
+                        // Connection closed by client
                         close(fds[i].fd);
                         fds.erase(fds.begin() + i);
-						for (int index = 0; index < timers.size(); index++)
-						{
-							if (timers.at(index).first == fds[i].fd)
-							{
-								timers.erase(timers.begin() + index);
-								break;
-							}
-						}
-                        --i;
-					}
-					else 
+                        i--; // Adjust index after erasing
+                        continue;
+                    } else
 					{
                         // Process the received data
-						std::string response;
-                        std::string receivedData(buffer, bytesRead);
-						if (receivedData.find("GET") != std::string::npos)
-						{
-							std::cout << "GETTING" << std::endl;
-							handleGet(receivedData, fds, i);
-						}
-						if (receivedData.find("POST") != std::string::npos)
-						{
-							std::cout << "POSTING" << std::endl;
-							handlePost(receivedData, fds, i);
-						}
-						if (receivedData.find("DELETE") != std::string::npos)
-						{
-							std::cout << "DELETING" << std::endl;
-							handleDelete(receivedData, fds, i);
-						}
-						std::cout << "Prev message from this (fd " << timers.at(i).first << ") came " << time(NULL) - timers.at(i).second << " seconds ago" << std::endl;
-						timers.at(i).second = time(NULL);
-					}
-				}
-			}
-			// if (fds[i].fd != serverList[i].listener.getServerFd())
-			// {
-			// 	if (time(NULL) - timers.at(i).second > 5)
-			// 	{
-			// 		std::cout << "time now = " << time(NULL) << std::endl;
-			// 		std::cout << "Connection timeout for " << fds[i].fd << std::endl;
-			// 		close(fds[i].fd);
-            //         fds.erase(fds.begin() + i);
-			// 		for (int index = 0; index < timers.size(); index++)
-			// 		{
-			// 			if (timers.at(index).first == fds[i].fd)
-			// 			{
-			// 				timers.erase(timers.begin() + index);
-			// 				break;
-			// 			}
-			// 		}
-			// 	}
-			// 	// else
-			// 		// std::cout << "Still has time" << std::endl;
-			// }
-		}
-	}
-	
+                        std::string receivedData(buffer, bytesReceived);
+                        std::cout << "Received data: " << receivedData << std::endl;
+						handleGet(receivedData, fds, i);
+                    }
+                }
+            }
+        }
+    }
 }
 
 int Manager::readConfig(std::string fileName)
