@@ -257,7 +257,21 @@ void Manager::run(std::string configFile)
                         // Process the received data
                         std::string receivedData(buffer, bytesReceived);
                         std::cout << "Received data: " << receivedData << std::endl;
-						handleGet(receivedData, fds, i);
+						if (receivedData.find("GET") != std::string::npos)
+						{
+							std::cout << "GETTING" << std::endl;
+							handleGet(receivedData, fds, i);
+						}
+						if (receivedData.find("POST") != std::string::npos)
+						{
+							std::cout << "POSTING" << std::endl;
+							handlePost(receivedData, fds, i);
+						}
+						if (receivedData.find("DELETE") != std::string::npos)
+						{
+							std::cout << "DELETING" << std::endl;
+							handleDelete(receivedData, fds, i);
+						}
                     }
                 }
             }
