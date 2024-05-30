@@ -25,15 +25,18 @@ public:
 	~Server();
 	Server(const Server &var);
 	Server& operator=(const Server &var);
-	std::string getMIMEType(std::string fileExt);
-	std::string buildHTTPResponse(std::string fileName, std::string fileExt);
-	std::string getServerName(void);
 
+	std::string buildHTTPResponse(std::string fileName, std::string fileExt);
+
+	std::string getMIMEType(std::string fileExt);
+
+	std::string getServerName(void);
 	int getPort(void);
 	int getNthPort(int n);
 	std::string getCGIExt(void);
 	std::string getCGIPath(void);
 	int getNumOfPorts(void);
+	int getClientBodySize(void);
 
 	void makeSocket(int portNum);
 	void makeSocketList(void);

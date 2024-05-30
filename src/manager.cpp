@@ -93,19 +93,25 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 	// }
 	// else
 	{
+		//for debugging
 		std::cout << "here, making up a response, i = " << i << std::endl;
-		for (int j = 0; j < serverIndex.size(); j++)
+		serverList.at(serverIndex.at(index).second).log(receivedData);
+		response = serverList.at(serverIndex.at(index).second).buildHTTPResponse(fileName, fileExt);
+		std::cout << "The response is :" << std::endl << response << std::endl;
+
+		if (serverList.at(serverIndex.at(index).second).getClientBodySize() != 0 && serverList.at(serverIndex.at(index).second).getClientBodySize() < response.length())
 		{
-			if (serverIndex.at(j).first == fds[i].fd)
-			{
-				serverList.at(serverIndex.at(j).second).log(receivedData);
-				response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(fileName, fileExt);
-				break;
-			}
+			std::stringstream responseStream;
+			std::cout << "response too large" << std::endl;
+			responseStream << "HTTP/1.1 413 Request Entity Too Large\r\n"
+						   << "Content-Length: 34\r\n"
+						   << "\r\n"
+						   << "ERROR 413 Request Entity Too Large";
+			response = "";
+			response = responseStream.str();
 		}
 		send(fds[i].fd, response.c_str(), response.length(), 0);
 	}
-
 }
 
 void Manager::handlePost(std::string receivedData, std::vector <struct pollfd> fds, int i)
@@ -256,7 +262,7 @@ void Manager::run(std::string configFile)
 					{
                         // Process the received data
                         std::string receivedData(buffer, bytesReceived);
-                        std::cout << "Received data: " << receivedData << std::endl;
+                        std::cout << "Received data: " << std::endl << receivedData << std::endl;
 						if (receivedData.find("GET") != std::string::npos)
 						{
 							std::cout << "GETTING" << std::endl;

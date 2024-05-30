@@ -35,7 +35,7 @@ Server::Server(const Server &var)
 
 Server &Server::operator=(const Server &var)
 {
-	if (this !=  &var)
+	if (this != &var)
 	{
 		this->port = var.port;
 		this->listener = var.listener;
@@ -64,7 +64,6 @@ void Server::print(void)
 	{
 		std::cout << ports.at(i) << std::endl;
 	}
-	
 }
 
 std::string Server::getServerName(void)
@@ -112,6 +111,11 @@ void Server::setClientBodySize(std::string size)
 	this->client_max_body_size = std::stoi(size);
 }
 
+int Server::getClientBodySize(void)
+{
+	return this->client_max_body_size;
+}
+
 std::string Server::getCGIPath(void)
 {
 	return this->cgiPath;
@@ -122,23 +126,28 @@ std::string Server::getCGIExt(void)
 	return this->cgiExt;
 }
 
-std::string Server::getMIMEType(std::string fileExt) {
-    if (fileExt.compare(".html") == 0 || fileExt.compare(".htm") == 0) 
+std::string Server::getMIMEType(std::string fileExt)
+{
+	if (fileExt.compare(".html") == 0 || fileExt.compare(".htm") == 0)
 	{
-        return "text/html";
-    } else if (fileExt.compare(".txt") == 0) 
+		return "text/html";
+	}
+	else if (fileExt.compare(".txt") == 0)
 	{
-        return "text/plain";
-    } else if (fileExt.compare(".jpg") == 0 || fileExt.compare(".jpeg") == 0) 
+		return "text/plain";
+	}
+	else if (fileExt.compare(".jpg") == 0 || fileExt.compare(".jpeg") == 0)
 	{
-        return "image/jpeg";
-    } else if (fileExt.compare(".png") == 0) 
+		return "image/jpeg";
+	}
+	else if (fileExt.compare(".png") == 0)
 	{
-        return "image/png";
-    } else 
+		return "image/png";
+	}
+	else
 	{
-        return "application/octet-stream";
-    }
+		return "application/octet-stream";
+	}
 }
 
 std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
@@ -167,18 +176,12 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 			return response;
 		}
 		std::getline(file, buffer, '\0');
-		headerStream << "HTTP/1.1 200 OK\r\n" << "Content-Length: " << buffer.size() << "\r\n" << "\r\n";
+		headerStream << "HTTP/1.1 200 OK\r\n"
+					 << "Content-Length: " << buffer.size() << "\r\n"
+					 << "\r\n";
 		header = headerStream.str();
 		response.append(header);
 		response.append(buffer);
-		if (client_max_body_size > 0 && response.length() > client_max_body_size)
-		{
-			std::stringstream responseStream;
-			std::cout << "response too large" << std::endl;
-			responseStream << "HTTP/1.1 413 Request Entity Too Large\r\n" << "Content-Length: 25\r\n" << "\r\n" << "Request Entity Too Large";
-			response = "";
-			response = responseStream.str();
-		}
 		return response;
 	}
 
@@ -198,55 +201,45 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 		std::ifstream errormsg(errorDir);
 		if (errormsg.is_open() == 0)
 		{
-			responseStream << "HTTP/1.1 404 Not Found\r\n" << "Content-Length: 66\r\n" << "\r\n" << "Page you were looking for does not exist, nor should it ever exist";
+			responseStream << "HTTP/1.1 404 Not Found\r\n"
+						   << "Content-Length: 66\r\n"
+						   << "\r\n"
+						   << "Page you were looking for does not exist, nor should it ever exist";
 			response = responseStream.str();
 			return response;
 		}
 		std::getline(errormsg, buffer, '\0');
-		headerStream << "HTTP/1.1 404 Not Found\r\n" << "Content-Length: " << buffer.size() << "\r\n" << "\r\n";
+		headerStream << "HTTP/1.1 404 Not Found\r\n"
+					 << "Content-Length: " << buffer.size() << "\r\n"
+					 << "\r\n";
 		header = headerStream.str();
 		response.append(header);
 		response.append(buffer);
-		if (client_max_body_size > 0 && response.length() > client_max_body_size)
-		{
-			std::stringstream responseStream;
-			std::cout << "response too large" << std::endl;
-			responseStream << "HTTP/1.1 413 Request Entity Too Large\r\n" << "Content-Length: 25\r\n" << "\r\n" << "Request Entity Too Large";
-			response = "";
-			response = responseStream.str();
-		}
 		return response;
 	}
 	// headerStream << "HTTP/1.1 200 OK\r\n" << "Content-Type: " << mimeType << "\r\n" << "\r\n";
 	std::getline(file, buffer, '\0');
-	headerStream << "HTTP/1.1 200 OK\r\n" << "Content-Length: " << buffer.size() << "\r\n" << "\r\n";
+	headerStream << "HTTP/1.1 200 OK\r\n"
+				 << "Content-Length: " << buffer.size() << "\r\n"
+				 << "\r\n";
 	header = headerStream.str();
 	response.append(header);
 	response.append(buffer);
-	if (client_max_body_size > 0 && response.length() > client_max_body_size)
-	{
-		std::stringstream responseStream;
-		std::cout << "response too large" << std::endl;
-		responseStream << "HTTP/1.1 413 Request Entity Too Large\r\n" << "Content-Length: 25\r\n" << "\r\n" << "Request Entity Too Large";
-		response = "";
-		response = responseStream.str();
-	}
-	std::cout << "response = " <<response << std::endl;
 	return response;
 }
 
-void setnonblocking(int sockfd) {
-    int flags = fcntl(sockfd, F_GETFL, 0);
-    fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+void setnonblocking(int sockfd)
+{
+	int flags = fcntl(sockfd, F_GETFL, 0);
+	fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
 }
 
 void Server::makeSocket(int portNum)
 {
 	listeningSocket newSocket(portNum);
-    setnonblocking(newSocket.getServerFd()); // Set the listening socket to non-blocking mode
-    this->listener = newSocket; // Add the new socket to the list
-    std::cout << "Socket for port " << portNum << " created and added to the list." << std::endl;
-
+	setnonblocking(newSocket.getServerFd()); // Set the listening socket to non-blocking mode
+	this->listener = newSocket;				 // Add the new socket to the list
+	std::cout << "Socket for port " << portNum << " created and added to the list." << std::endl;
 }
 
 void Server::log(std::string text)
@@ -256,18 +249,19 @@ void Server::log(std::string text)
 	if (logfile.is_open() == 0)
 	{
 		std::cout << "Failed to open logfile.txt" << std::endl;
-		return ;
+		return;
 	}
 	time_t rawtime;
 	struct tm *timeinfo;
 	char timeBuffer[80];
-	time (&rawtime);
+	time(&rawtime);
 	timeinfo = localtime(&rawtime);
 	strftime(timeBuffer, 80, "%T %d:%m:%Y", timeinfo);
 	logfile << "----------------------------------------------------------------------------------------------------" << std::endl;
 	logfile << "New entry in log, at time " << timeBuffer << ":" << std::endl;
 	logfile << text;
-	logfile << std::endl << std::endl;
+	logfile << std::endl
+			<< std::endl;
 	logfile.close();
 }
 
@@ -278,7 +272,7 @@ void Server::addPort(int port)
 	for (i = 0; i < numOfPorts; i++)
 	{
 		if (ports.at(i) == port)
-			break ;
+			break;
 	}
 	std::cout << "HERE, i = " << i << " numOfports = " << numOfPorts << std::endl;
 	if (i == numOfPorts)
