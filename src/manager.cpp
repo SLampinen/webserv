@@ -65,33 +65,14 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 			break;
 	}
 	std::cout << "HERE!" << std::endl;
+	std::cout << "File ext = " << fileExt << " and cgi ext = " << serverList.at(serverIndex.at(index).second).getCGIExt() << std::endl;
 	std::cout << serverList.size() << " and " << serverIndex.size() << " and " <<index << std::endl;
-	// if (fileExt.compare(serverList.at(serverIndex.at(index).second).getCGIExt()) == 0)
-	// {
-	// 	std::cout << "CGI" << std::endl;
-	// 	for (int j = 0; j < serverIndex.size(); j++)
-	// 	{
-	// 		if (serverIndex.at(j).first == fds[i].fd)
-	// 		{
-	// 			if (serverList.at(serverIndex.at(j).second).getCGIExt().empty() || serverList.at(serverIndex.at(j).second).getCGIPath().empty())
-	// 			{
-	// 				std::cout << "ERROR, CGI not set" << std::endl;
-	// 				std::stringstream responseStream;
-	// 				responseStream << "HTTP/1.1 418 I'm a teapot\r\n" << "Content-Length: 17\r\n" << "\r\n" << "CGI not available";
-	// 				response = responseStream.str();
-	// 			}
-	// 			else
-	// 			{
-	// 				std::cout << "Doing cgi" << std::endl;
-	// 				//do CGI
-	// 			}
-	// 			break;
-	// 		}
-	// 	}
-	// 	std::cout << "Sending response : " << std::endl << response << std::endl;
-	// 	send(fds[i].fd, response.c_str(), response.length(), 0);
-	// }
-	// else
+	if (fileExt.compare(serverList.at(serverIndex.at(index).second).getCGIExt()) == 0)
+	{
+		std::cout << "starting CGI" << std::endl;
+		handleCGI(receivedData, fds, i);
+	}
+	else
 	{
 		//for debugging
 		std::cout << "here, making up a response, i = " << i << std::endl;
@@ -405,4 +386,48 @@ int Manager::readConfig(std::string fileName)
 		}
 	}
 	return 1;
+}
+
+void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fds, int i)
+{
+	std::string response;
+	for (int j = 0; j < serverIndex.size(); j++)
+	{
+		if (serverIndex.at(j).first == fds[i].fd)
+		{
+			if (serverList.at(serverIndex.at(j).second).getCGIExt().empty() || serverList.at(serverIndex.at(j).second).getCGIPath().empty())
+			{
+				std::cout << "ERROR, CGI not set" << std::endl;
+				std::stringstream responseStream;
+				responseStream << "HTTP/1.1 418 I'm a teapot\r\n" << "Content-Length: 17\r\n" << "\r\n" << "CGI not available";
+				response = responseStream.str();
+			}
+			else
+			{
+				std::cout << "Doing cgi" << std::endl;
+				int pid;
+				pid = fork();
+				if (pid == 0)
+				{
+					std::string path = serverList.at(serverIndex.at(j).second).getCGIPath();
+					std::string cmd = serverList.at(serverIndex.at(j).second).getRootDir();
+					receivedData = receivedData.substr(receivedData.find("/") + 1);
+					cmd.append(receivedData);
+					if (cmd.find("?") != std::string::npos)
+					{
+						int end = cmd.find("?");
+						cmd.erase(end);
+					}
+					std::cout << "path = " <<path << std::endl;
+					std::cout << "cmd = " <<cmd << std::endl; 
+					char *cmdArr[] = {const_cast<char *>(path.data()), const_cast<char *>(cmd.data()), NULL};
+					execvp(cmdArr[0], cmdArr);
+					exit(0) ;
+				}
+			}
+			break;
+		}
+	}
+	std::cout << "Sending response : " << std::endl << response << std::endl;
+	send(fds[i].fd, response.c_str(), response.length(), 0);
 }

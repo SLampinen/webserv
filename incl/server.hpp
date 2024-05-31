@@ -37,6 +37,7 @@ public:
 	std::string getCGIPath(void);
 	int getNumOfPorts(void);
 	int getClientBodySize(void);
+	std::string getRootDir(void);
 
 	void makeSocket(int portNum);
 	void makeSocketList(void);

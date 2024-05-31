@@ -21,9 +21,12 @@ public:
 	Manager& operator=(const Manager &var);
 	void run(std::string configFile);
 	int readConfig(std::string fileName);
+
 	void handleGet(std::string receivedData, std::vector <struct pollfd> fds, int i);
 	void handlePost(std::string receivedData, std::vector <struct pollfd> fds, int i);
 	void handleDelete(std::string receivedData, std::vector <struct pollfd> fds, int i);
+
+	void handleCGI(std::string receivedData, std::vector <struct pollfd> fds, int i);
 };
 
 #endif

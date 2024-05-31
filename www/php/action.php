@@ -1,1 +1,1 @@
-<?php echo "Hello world\n"; ?>
+<?php echo "This is coming from php file\n"; ?>

@@ -258,7 +258,7 @@ void Server::log(std::string text)
 	timeinfo = localtime(&rawtime);
 	strftime(timeBuffer, 80, "%T %d:%m:%Y", timeinfo);
 	logfile << "----------------------------------------------------------------------------------------------------" << std::endl;
-	logfile << "New entry in log, at time " << timeBuffer << ":" << std::endl;
+	logfile << "New entry in log, at time " << timeBuffer << std::endl;
 	logfile << text;
 	logfile << std::endl
 			<< std::endl;
@@ -303,4 +303,9 @@ void Server::makeSocketList()
 		setnonblocking(newSocket.getServerFd());
 		listeners.push_back(newSocket);
 	}
+}
+
+std::string Server::getRootDir()
+{
+	 return this->rootDir;
 }

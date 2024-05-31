@@ -17,5 +17,6 @@
 # include <fstream>
 # include <poll.h>
 # include <map>
+# include <array>
 
 #endif
