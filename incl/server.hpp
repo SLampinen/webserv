@@ -26,6 +26,11 @@ public:
 	Server(const Server &var);
 	Server& operator=(const Server &var);
 
+	std::string makeStatus2xx(int status);
+	std::string makeStatus3xx(int status);
+	std::string makeStatus4xx(int status);
+	std::string makeStatus5xx(int status);
+	std::string makeHeader(int responseStatus, int responseSize);
 	std::string buildHTTPResponse(std::string fileName, std::string fileExt);
 
 	std::string getMIMEType(std::string fileExt);

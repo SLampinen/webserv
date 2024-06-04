@@ -137,7 +137,36 @@ void Manager::handlePost(std::string receivedData, std::vector <struct pollfd> f
 
 void Manager::handleDelete(std::string receivedData, std::vector <struct pollfd> fds, int i)
 {
+	for (int j = 0; j < serverIndex.size(); j++)
+	{
+		if (serverIndex.at(j).first == fds[i].fd)
+		{
+			serverList.at(serverIndex.at(j).second).log(receivedData);
+			break;
+		}
+	}
 
+}
+
+void Manager::handleOther(std::string receivedData, std::vector <struct pollfd> fds, int i)
+{
+	for (int j = 0; j < serverIndex.size(); j++)
+	{
+		if (serverIndex.at(j).first == fds[i].fd)
+		{
+			serverList.at(serverIndex.at(j).second).log(receivedData);
+			break;
+		}
+	}
+	std::string response;
+	int index;
+	for (index = 0; index < serverIndex.size(); index++)
+	{
+		if (serverIndex.at(index).first == fds[i].fd)
+			break;
+	}
+	response = serverList.at(serverIndex.at(index).second).makeHeader(501, 22);
+	send(fds[i].fd, response.c_str(), response.length(), 0);
 }
 
 void Manager::run(std::string configFile) 
@@ -249,15 +278,20 @@ void Manager::run(std::string configFile)
 							std::cout << "GETTING" << std::endl;
 							handleGet(receivedData, fds, i);
 						}
-						if (receivedData.find("POST") != std::string::npos)
+						else if (receivedData.find("POST") != std::string::npos)
 						{
 							std::cout << "POSTING" << std::endl;
 							handlePost(receivedData, fds, i);
 						}
-						if (receivedData.find("DELETE") != std::string::npos)
+						else if (receivedData.find("DELETE") != std::string::npos)
 						{
 							std::cout << "DELETING" << std::endl;
 							handleDelete(receivedData, fds, i);
+						}
+						else
+						{
+							std::cout << "OTHER METHOD" << std::endl;
+							handleOther(receivedData, fds, i);
 						}
                     }
                 }
@@ -407,7 +441,11 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 				std::cout << "Doing cgi" << std::endl;
 				int pid;
 				pid = fork();
-				if (pid == 0)
+				if (pid < 0)
+				{
+					response = serverList.at(serverIndex.at(j).second).makeHeader(500, 0);
+				}
+				else if (pid == 0)
 				{
 					std::string path = serverList.at(serverIndex.at(j).second).getCGIPath();
 					std::string cmd = serverList.at(serverIndex.at(j).second).getRootDir();
@@ -419,11 +457,27 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 						cmd.erase(end);
 					}
 					std::cout << "path = " <<path << std::endl;
-					std::cout << "cmd = " <<cmd << std::endl; 
+					std::cout << "cmd = " <<cmd << std::endl;
+					std::string fName = serverList.at(serverIndex.at(j).second).getRootDir();
+					fName.append("temp");
+					int fd = open(fName.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0777);
+					dup2(fd, 1);
 					char *cmdArr[] = {const_cast<char *>(path.data()), const_cast<char *>(cmd.data()), NULL};
 					execvp(cmdArr[0], cmdArr);
 					exit(0) ;
 				}
+				else
+				{
+					int status;
+					// without WNOHANG, this blocks. with it, this completes immediatly, rather than waiting for php to complete
+					// need more work to fix
+					waitpid(pid, &status, 0);
+					response = serverList.at(serverIndex.at(j).second).buildHTTPResponse("temp", "");
+					std::string fName = serverList.at(serverIndex.at(j).second).getRootDir();
+					fName.append("temp");
+					unlink(fName.c_str());
+				}
+
 			}
 			break;
 		}

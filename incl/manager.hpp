@@ -25,6 +25,7 @@ public:
 	void handleGet(std::string receivedData, std::vector <struct pollfd> fds, int i);
 	void handlePost(std::string receivedData, std::vector <struct pollfd> fds, int i);
 	void handleDelete(std::string receivedData, std::vector <struct pollfd> fds, int i);
+	void handleOther(std::string receivedData, std::vector <struct pollfd> fds, int i);
 
 	void handleCGI(std::string receivedData, std::vector <struct pollfd> fds, int i);
 };
