@@ -3,6 +3,7 @@
 Manager::Manager()
 {
 	numOfServers = 0;
+	managerPid = 0;
 }
 
 Manager::~Manager()
@@ -188,10 +189,12 @@ void Manager::run(std::string configFile)
             pfd.fd = serverList.at(i).listeners.at(k).getServerFd();
             pfd.events = POLLIN;
             fds.push_back(pfd);
+			cgiOnGoing.push_back(0);
         }
     }
     while (true) 
 	{
+		std::cout << "Restart cycle" << std::endl;
         int pollCount = poll(fds.data(), fds.size(), POLL_TIMEOUT);
         if (pollCount < 0) 
 		{
@@ -234,6 +237,7 @@ void Manager::run(std::string configFile)
                                 clientPfd.fd = clientFd;
                                 clientPfd.events = POLLIN;
                                 fds.push_back(clientPfd);
+								cgiOnGoing.push_back(0);
 								serverIndex.push_back(std::make_pair(clientFd, j));
 								std::cout << "here, i, j, k are "<< i << " " << j << " " << k << std::endl;
                             }
@@ -243,7 +247,8 @@ void Manager::run(std::string configFile)
                     }
                     if (newConnection) break;
                 }
-                if (!newConnection) {
+                if (!newConnection)
+				{
                     // Handle communication with the client
                     char buffer[1024];
                     int bytesReceived = recv(fds[i].fd, buffer, sizeof(buffer), 0);
@@ -253,25 +258,40 @@ void Manager::run(std::string configFile)
 						{
                             // No data available to read
                             continue;
-                        } else
+                        }
+						else
 						{
                             std::cerr << "Recv error: " << strerror(errno) << std::endl;
                             close(fds[i].fd);
                             fds.erase(fds.begin() + i);
+							cgiOnGoing.erase(cgiOnGoing.begin() + i);
                             i--; // Adjust index after erasing
                             continue;
                         }
-                    } else if (bytesReceived == 0)
+                    }
+					else if (bytesReceived == 0)
 					{
                         // Connection closed by client
                         close(fds[i].fd);
                         fds.erase(fds.begin() + i);
+						cgiOnGoing.erase(cgiOnGoing.begin() + i);
                         i--; // Adjust index after erasing
                         continue;
-                    } else
+                    }
+					else
 					{
-                        // Process the received data
+						//if request too large
                         std::string receivedData(buffer, bytesReceived);
+						bytesReceived = recv(fds[i].fd, buffer, sizeof(buffer), 0);
+						while (bytesReceived > 0)
+						{
+							std::string rest(buffer, bytesReceived);
+							receivedData.append(rest);
+							bytesReceived = recv(fds[i].fd, buffer, sizeof(buffer), 0);
+						}
+
+
+                        // Process the received data
                         std::cout << "Received data: " << std::endl << receivedData << std::endl;
 						if (receivedData.find("GET") != std::string::npos)
 						{
@@ -296,6 +316,34 @@ void Manager::run(std::string configFile)
                     }
                 }
             }
+			if (cgiOnGoing[i] == 1)
+			{
+				//check if cgi has done the work and if yes send response
+				std::cout << "Checking and working and all that" << std::endl;
+				int status;
+				int pid = managerPid;
+				int result = waitpid(0, &status, WNOHANG);
+				std::cout << "Result = " << result << std::endl;
+				std::cout << "managerPid = " << pid << std::endl;
+				if (result == pid)
+				{
+					int j;
+					for (j = 0; j < serverIndex.size(); j++)
+					{
+						if (serverIndex.at(j).first == fds[i].fd)
+						{
+							std::cout << "Working" << std::endl;
+							std::string response = serverList.at(serverIndex.at(j).second).buildHTTPResponse("temp", "");
+							std::string fName = serverList.at(serverIndex.at(j).second).getRootDir();
+							fName.append("temp");
+							unlink(fName.c_str());
+							send(fds[i].fd, response.c_str(), response.length(), 0);
+							cgiOnGoing[i] = 0;
+						}
+					}
+				}
+			}
+			
         }
     }
 }
@@ -425,6 +473,7 @@ int Manager::readConfig(std::string fileName)
 void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fds, int i)
 {
 	std::string response;
+	cgiOnGoing[i] = 1;
 	for (int j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
@@ -435,6 +484,8 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 				std::stringstream responseStream;
 				responseStream << "HTTP/1.1 418 I'm a teapot\r\n" << "Content-Length: 17\r\n" << "\r\n" << "CGI not available";
 				response = responseStream.str();
+				cgiOnGoing[i] = 0;
+				send(fds[i].fd, response.c_str(), response.length(), 0);
 			}
 			else
 			{
@@ -444,6 +495,8 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 				if (pid < 0)
 				{
 					response = serverList.at(serverIndex.at(j).second).makeHeader(500, 0);
+					cgiOnGoing[i] = 0;
+					send(fds[i].fd, response.c_str(), response.length(), 0);
 				}
 				else if (pid == 0)
 				{
@@ -468,20 +521,21 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 				}
 				else
 				{
-					int status;
-					// without WNOHANG, this blocks. with it, this completes immediatly, rather than waiting for php to complete
-					// need more work to fix
-					waitpid(pid, &status, 0);
-					response = serverList.at(serverIndex.at(j).second).buildHTTPResponse("temp", "");
-					std::string fName = serverList.at(serverIndex.at(j).second).getRootDir();
-					fName.append("temp");
-					unlink(fName.c_str());
+					managerPid = pid;
+					// int status;
+					// // without WNOHANG, this blocks. with it, this completes immediatly, rather than waiting for php to complete
+					// // need more work to fix
+					// waitpid(pid, &status, 0);
+					// response = serverList.at(serverIndex.at(j).second).buildHTTPResponse("temp", "");
+					// std::string fName = serverList.at(serverIndex.at(j).second).getRootDir();
+					// fName.append("temp");
+					// unlink(fName.c_str());
 				}
 
 			}
 			break;
 		}
 	}
-	std::cout << "Sending response : " << std::endl << response << std::endl;
-	send(fds[i].fd, response.c_str(), response.length(), 0);
+	// std::cout << "Sending response : " << std::endl << response << std::endl;
+	// send(fds[i].fd, response.c_str(), response.length(), 0);
 }
