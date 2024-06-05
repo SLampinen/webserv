@@ -3,7 +3,6 @@
 Manager::Manager()
 {
 	numOfServers = 0;
-	managerPid = 0;
 }
 
 Manager::~Manager()
@@ -321,24 +320,35 @@ void Manager::run(std::string configFile)
 				//check if cgi has done the work and if yes send response
 				std::cout << "Checking and working and all that" << std::endl;
 				int status;
-				int pid = managerPid;
 				int result = waitpid(0, &status, WNOHANG);
-				std::cout << "Result = " << result << std::endl;
-				std::cout << "managerPid = " << pid << std::endl;
-				if (result == pid)
+				int k;
+				//check which, if any have work done
+				if (result > 0)
 				{
-					int j;
-					for (j = 0; j < serverIndex.size(); j++)
+					for (k = 0; k < pids.size(); k++)
 					{
-						if (serverIndex.at(j).first == fds[i].fd)
+						if (result == pids.at(k))
 						{
-							std::cout << "Working" << std::endl;
-							std::string response = serverList.at(serverIndex.at(j).second).buildHTTPResponse("temp", "");
-							std::string fName = serverList.at(serverIndex.at(j).second).getRootDir();
-							fName.append("temp");
-							unlink(fName.c_str());
-							send(fds[i].fd, response.c_str(), response.length(), 0);
-							cgiOnGoing[i] = 0;
+							int j;
+							for (j = 0; j < serverIndex.size(); j++)
+							{
+								if (serverIndex.at(j).first == fds[i].fd)
+								{
+									std::cout << "Working" << std::endl;
+									std::cout << "HERE again, i = " << i << std::endl;
+									std::string temp = "temp";
+									std::string fullName = serverList.at(serverIndex.at(j).second).getRootDir();
+									temp.append(std::to_string(i));
+									fullName.append(temp);
+									std::cout << "Full name = " << fullName << std::endl;
+									std::cout << "Name of temp file = " << temp << std::endl;
+									std::string response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(temp, "");
+									unlink(fullName.c_str());
+									send(fds[i].fd, response.c_str(), response.length(), 0);
+									cgiOnGoing[i] = 0;
+									pids.erase(pids.begin() + k);
+								}
+							}
 						}
 					}
 				}
@@ -500,6 +510,7 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 				}
 				else if (pid == 0)
 				{
+					std::cout << "HERE, i = " << i << std::endl;
 					std::string path = serverList.at(serverIndex.at(j).second).getCGIPath();
 					std::string cmd = serverList.at(serverIndex.at(j).second).getRootDir();
 					receivedData = receivedData.substr(receivedData.find("/") + 1);
@@ -513,7 +524,9 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 					std::cout << "cmd = " <<cmd << std::endl;
 					std::string fName = serverList.at(serverIndex.at(j).second).getRootDir();
 					fName.append("temp");
+					fName.append(std::to_string(i));
 					int fd = open(fName.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0777);
+					std::cerr << "HEREEEE  " << fName << std::endl;
 					dup2(fd, 1);
 					char *cmdArr[] = {const_cast<char *>(path.data()), const_cast<char *>(cmd.data()), NULL};
 					execvp(cmdArr[0], cmdArr);
@@ -521,21 +534,12 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 				}
 				else
 				{
-					managerPid = pid;
-					// int status;
-					// // without WNOHANG, this blocks. with it, this completes immediatly, rather than waiting for php to complete
-					// // need more work to fix
-					// waitpid(pid, &status, 0);
-					// response = serverList.at(serverIndex.at(j).second).buildHTTPResponse("temp", "");
-					// std::string fName = serverList.at(serverIndex.at(j).second).getRootDir();
-					// fName.append("temp");
-					// unlink(fName.c_str());
+					std::cout << "pid is " << pid << std::endl;
+					pids.push_back(pid);
 				}
 
 			}
 			break;
 		}
 	}
-	// std::cout << "Sending response : " << std::endl << response << std::endl;
-	// send(fds[i].fd, response.c_str(), response.length(), 0);
 }

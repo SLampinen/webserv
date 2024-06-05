@@ -8,7 +8,7 @@ class Manager
 {
 private:
 	int numOfServers;
-	int managerPid;
+	std::vector<int> pids;
 	std::vector<Server> serverList;
 	std::vector<std::pair<int, int> > serverIndex;
 	std::vector<struct pollfd> fds;
