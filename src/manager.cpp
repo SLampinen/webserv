@@ -76,7 +76,9 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 	{
 		//for debugging
 		std::cout << "here, making up a response, i = " << i << std::endl;
+		
 		serverList.at(serverIndex.at(index).second).log(receivedData);
+
 		response = serverList.at(serverIndex.at(index).second).buildHTTPResponse(fileName, fileExt);
 		std::cout << "The response is :" << std::endl << response << std::endl;
 
@@ -84,12 +86,9 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 		{
 			std::stringstream responseStream;
 			std::cout << "response too large" << std::endl;
-			responseStream << "HTTP/1.1 413 Request Entity Too Large\r\n"
-						   << "Content-Length: 34\r\n"
-						   << "\r\n"
-						   << "ERROR 413 Request Entity Too Large";
-			response = "";
-			response = responseStream.str();
+			std::string body = "ERROR 413 Request Entity Too Large";
+			response = serverList.at(serverIndex.at(index).second).makeHeader(413, body.size());
+			response.append(body);
 		}
 		send(fds[i].fd, response.c_str(), response.length(), 0);
 	}
@@ -165,7 +164,9 @@ void Manager::handleOther(std::string receivedData, std::vector <struct pollfd> 
 		if (serverIndex.at(index).first == fds[i].fd)
 			break;
 	}
-	response = serverList.at(serverIndex.at(index).second).makeHeader(501, 22);
+	std::string body = "Method Not Implemented";
+	response = serverList.at(serverIndex.at(index).second).makeHeader(501, body.size());
+	response.append(body);
 	send(fds[i].fd, response.c_str(), response.length(), 0);
 }
 
@@ -253,6 +254,7 @@ void Manager::run(std::string configFile)
                     int bytesReceived = recv(fds[i].fd, buffer, sizeof(buffer), 0);
                     if (bytesReceived < 0)
 					{
+						//Is this legal? or is this checking errno immediatly after read operation?
                         if (errno == EWOULDBLOCK || errno == EAGAIN)
 						{
                             // No data available to read
@@ -335,12 +337,11 @@ void Manager::run(std::string configFile)
 								if (serverIndex.at(j).first == fds[i].fd)
 								{
 									std::cout << "Working" << std::endl;
-									std::cout << "HERE again, i = " << i << std::endl;
 									std::string temp = "temp";
 									std::string fullName = serverList.at(serverIndex.at(j).second).getRootDir();
 									temp.append(std::to_string(i));
 									fullName.append(temp);
-									std::cout << "Full name = " << fullName << std::endl;
+									std::cout << "Full name (including directory) = " << fullName << std::endl;
 									std::cout << "Name of temp file = " << temp << std::endl;
 									std::string response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(temp, "");
 									unlink(fullName.c_str());
@@ -353,7 +354,6 @@ void Manager::run(std::string configFile)
 					}
 				}
 			}
-			
         }
     }
 }
@@ -491,9 +491,9 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 			if (serverList.at(serverIndex.at(j).second).getCGIExt().empty() || serverList.at(serverIndex.at(j).second).getCGIPath().empty())
 			{
 				std::cout << "ERROR, CGI not set" << std::endl;
-				std::stringstream responseStream;
-				responseStream << "HTTP/1.1 418 I'm a teapot\r\n" << "Content-Length: 17\r\n" << "\r\n" << "CGI not available";
-				response = responseStream.str();
+				std::string body = "CGI not available";
+				response = serverList.at(serverIndex.at(j).second).makeHeader(418, body.size());
+				response.append(body);
 				cgiOnGoing[i] = 0;
 				send(fds[i].fd, response.c_str(), response.length(), 0);
 			}
@@ -504,13 +504,14 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 				pid = fork();
 				if (pid < 0)
 				{
-					response = serverList.at(serverIndex.at(j).second).makeHeader(500, 0);
+					std::string body = "Internal server error";
+					response = serverList.at(serverIndex.at(j).second).makeHeader(500, body.size());
+					response.append(body);
 					cgiOnGoing[i] = 0;
 					send(fds[i].fd, response.c_str(), response.length(), 0);
 				}
 				else if (pid == 0)
 				{
-					std::cout << "HERE, i = " << i << std::endl;
 					std::string path = serverList.at(serverIndex.at(j).second).getCGIPath();
 					std::string cmd = serverList.at(serverIndex.at(j).second).getRootDir();
 					receivedData = receivedData.substr(receivedData.find("/") + 1);
@@ -526,7 +527,6 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 					fName.append("temp");
 					fName.append(std::to_string(i));
 					int fd = open(fName.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0777);
-					std::cerr << "HEREEEE  " << fName << std::endl;
 					dup2(fd, 1);
 					char *cmdArr[] = {const_cast<char *>(path.data()), const_cast<char *>(cmd.data()), NULL};
 					execvp(cmdArr[0], cmdArr);

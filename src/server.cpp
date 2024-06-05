@@ -183,6 +183,12 @@ std::string Server::makeStatus4xx(int status)
 
 	if (status == 404)
 		return " Not Found";
+	
+	if (status == 413)
+		return " Request Entity Too Large";
+
+	if (status == 418)
+		return " I'm a teapot";
 
 	return " ERROR";
 }
@@ -271,8 +277,9 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 		std::ifstream errormsg(errorDir);
 		if (errormsg.is_open() == 0)
 		{
-			response = makeHeader(404, 66);
-			response.append("Page you were looking for does not exist, nor should it ever exist");
+			std::string body = "Page you were looking for does not exist, nor should it ever exist";
+			response = makeHeader(404, body.size());
+			response.append(body);
 			return response;
 		}
 		std::getline(errormsg, buffer, '\0');
