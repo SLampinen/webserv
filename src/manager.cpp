@@ -15,7 +15,6 @@ Manager::Manager(const Manager &var)
 	this->numOfServers = var.numOfServers;
 	this->serverList = var.serverList;
 	this->serverIndex = var.serverIndex;
-	this->timers = var.timers;
 	this->data = var.data;
 }
 
@@ -26,7 +25,6 @@ Manager &Manager::operator=(const Manager &var)
 		this->numOfServers = var.numOfServers;
 		this->serverList = var.serverList;
 		this->serverIndex = var.serverIndex;
-		this->timers = var.timers;
 		this->data = var.data;
 	}
 	return (*this);
@@ -190,11 +188,11 @@ void Manager::run(std::string configFile)
             pfd.events = POLLIN;
             fds.push_back(pfd);
 			cgiOnGoing.push_back(0);
+
         }
     }
     while (true) 
 	{
-		std::cout << "Restart cycle" << std::endl;
         int pollCount = poll(fds.data(), fds.size(), POLL_TIMEOUT);
         if (pollCount < 0) 
 		{
@@ -354,13 +352,15 @@ void Manager::run(std::string configFile)
 					}
 				}
 			}
+			//connection time-out handled here
+
+			
         }
     }
 }
 
 int Manager::readConfig(std::string fileName)
 {
-
 	std::fstream configFile;
 	int start, end;
 	std::string wip;

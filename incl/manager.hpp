@@ -13,9 +13,11 @@ private:
 	std::vector<std::pair<int, int> > serverIndex;
 	std::vector<struct pollfd> fds;
 	std::vector<int> cgiOnGoing;
-	std::vector<std::pair<int, int> > timers;
 	// we may not need this in full project
 	std::vector<std::string> data;
+
+	//testing this for timeout
+
 public:
 	Manager();
 	~Manager();
