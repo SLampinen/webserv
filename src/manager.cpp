@@ -203,7 +203,7 @@ void Manager::run(std::string configFile)
             std::cerr << "Poll error: " << strerror(errno) << std::endl;
             continue;
         }
-			std::cout << "new round " << std::endl;
+		std::cout << "new round " << std::endl;
         for (size_t i = 0; i < fds.size(); i++) 
 		{
             if (fds[i].revents & POLLIN) 
@@ -306,8 +306,11 @@ void Manager::run(std::string configFile)
 							std::cout << "GETTING" << std::endl;
 							fdsTimestamps[i] = time(NULL);
 							cgiOnGoing[i] = 0;
-							if (i < newPids.size())
-								newPids.erase(newPids.begin() + i);
+							for (int k = 0; k < newPids.size(); k++)
+							{
+								if (i == newPids.at(k).second)
+									newPids.erase(newPids.begin() + k);
+							}
 							handleGet(receivedData, fds, i);
 						}
 						else if (receivedData.find("POST") != std::string::npos)
@@ -315,8 +318,11 @@ void Manager::run(std::string configFile)
 							std::cout << "POSTING" << std::endl;
 							fdsTimestamps[i] = time(NULL);
 							cgiOnGoing[i] = 0;
-							if (i < newPids.size())
-								newPids.erase(newPids.begin() + i);
+							for (int k = 0; k < newPids.size(); k++)
+							{
+								if (i == newPids.at(k).second)
+									newPids.erase(newPids.begin() + k);
+							}
 							handlePost(receivedData, fds, i);
 						}
 						else if (receivedData.find("DELETE") != std::string::npos)
@@ -324,8 +330,11 @@ void Manager::run(std::string configFile)
 							std::cout << "DELETING" << std::endl;
 							fdsTimestamps[i] = time(NULL);
 							cgiOnGoing[i] = 0;
-							if (i < newPids.size())
-								newPids.erase(newPids.begin() + i);
+							for (int k = 0; k < newPids.size(); k++)
+							{
+								if (i == newPids.at(k).second)
+									newPids.erase(newPids.begin() + k);
+							}
 							handleDelete(receivedData, fds, i);
 						}
 						else
@@ -333,8 +342,11 @@ void Manager::run(std::string configFile)
 							std::cout << "OTHER METHOD" << std::endl;
 							fdsTimestamps[i] = time(NULL);
 							cgiOnGoing[i] = 0;
-							if (i < newPids.size())
-								newPids.erase(newPids.begin() + i);
+							for (int k = 0; k < newPids.size(); k++)
+							{
+								if (i == newPids.at(k).second)
+									newPids.erase(newPids.begin() + k);
+							}
 							handleOther(receivedData, fds, i);
 						}
                     }
@@ -400,6 +412,8 @@ void Manager::run(std::string configFile)
 									// pids.erase(pids.begin() + k);
 									newPids.erase(newPids.begin() + k);
 									k--;
+									if (k == 0)
+										break;
 								}
 							}
 						}
