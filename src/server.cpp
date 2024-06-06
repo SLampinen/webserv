@@ -228,6 +228,7 @@ std::string Server::makeHeader(int responseStatus, int responseSize)
 
 std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 {
+	std::cout << "BUILDING" << std::endl;
 	std::string response;
 	std::string mimeType = getMIMEType(fileExt);
 	std::cout << "file name = " << fileName << std::endl;

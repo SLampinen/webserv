@@ -70,6 +70,7 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 	if (fileExt.compare(serverList.at(serverIndex.at(index).second).getCGIExt()) == 0)
 	{
 		std::cout << "starting CGI" << std::endl;
+		serverList.at(serverIndex.at(index).second).log(receivedData);
 		handleCGI(receivedData, fds, i);
 	}
 	else
@@ -80,7 +81,7 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 		serverList.at(serverIndex.at(index).second).log(receivedData);
 
 		response = serverList.at(serverIndex.at(index).second).buildHTTPResponse(fileName, fileExt);
-		std::cout << "The response is :" << std::endl << response << std::endl;
+		// std::cout << "The response is :" << std::endl << response << std::endl;
 
 		if (serverList.at(serverIndex.at(index).second).getClientBodySize() != 0 && serverList.at(serverIndex.at(index).second).getClientBodySize() < response.length())
 		{
@@ -202,6 +203,7 @@ void Manager::run(std::string configFile)
             std::cerr << "Poll error: " << strerror(errno) << std::endl;
             continue;
         }
+			std::cout << "new round " << std::endl;
         for (size_t i = 0; i < fds.size(); i++) 
 		{
             if (fds[i].revents & POLLIN) 
@@ -276,6 +278,7 @@ void Manager::run(std::string configFile)
 					else if (bytesReceived == 0)
 					{
                         // Connection closed by client
+						std::cout << std::endl << "Client closed connection" << std::endl;
                         close(fds[i].fd);
                         fds.erase(fds.begin() + i);
 						fdsTimestamps.erase(fdsTimestamps.begin() + i);
@@ -295,31 +298,43 @@ void Manager::run(std::string configFile)
 							bytesReceived = recv(fds[i].fd, buffer, sizeof(buffer), 0);
 						}
 
-
                         // Process the received data
-                        std::cout << "Received data: " << std::endl << receivedData << std::endl;
+                        // std::cout << "Received data: " << std::endl << receivedData << std::endl;
+						
 						if (receivedData.find("GET") != std::string::npos)
 						{
 							std::cout << "GETTING" << std::endl;
 							fdsTimestamps[i] = time(NULL);
+							cgiOnGoing[i] = 0;
+							if (i < newPids.size())
+								newPids.erase(newPids.begin() + i);
 							handleGet(receivedData, fds, i);
 						}
 						else if (receivedData.find("POST") != std::string::npos)
 						{
 							std::cout << "POSTING" << std::endl;
 							fdsTimestamps[i] = time(NULL);
+							cgiOnGoing[i] = 0;
+							if (i < newPids.size())
+								newPids.erase(newPids.begin() + i);
 							handlePost(receivedData, fds, i);
 						}
 						else if (receivedData.find("DELETE") != std::string::npos)
 						{
 							std::cout << "DELETING" << std::endl;
 							fdsTimestamps[i] = time(NULL);
+							cgiOnGoing[i] = 0;
+							if (i < newPids.size())
+								newPids.erase(newPids.begin() + i);
 							handleDelete(receivedData, fds, i);
 						}
 						else
 						{
 							std::cout << "OTHER METHOD" << std::endl;
 							fdsTimestamps[i] = time(NULL);
+							cgiOnGoing[i] = 0;
+							if (i < newPids.size())
+								newPids.erase(newPids.begin() + i);
 							handleOther(receivedData, fds, i);
 						}
                     }
@@ -328,51 +343,64 @@ void Manager::run(std::string configFile)
 			if (cgiOnGoing[i] == 1)
 			{
 				//check if cgi has done the work and if yes send response
-				std::cout << "Checking and working and all that" << std::endl;
+				std::cout << "Checking and working and all that for i = " << i << std::endl;
 				int status;
 				int result = waitpid(0, &status, WNOHANG);
 				int k;
 				//check which, if any have work done
-				for (k = 0; k < pids.size(); k++)
+				if (result > 0)
 				{
-					if (time(NULL) - fdsTimestamps[i] > RESPONSE_TIMEOUT)
+					// for (k = 0; k < pids.size(); k++)
+					for (k = 0; k < newPids.size(); k++)
 					{
-						int j;
-						for (j = 0; j < serverIndex.size(); j++)
+						if (time(NULL) - fdsTimestamps[i] > RESPONSE_TIMEOUT)
 						{
-							if (serverIndex.at(j).first == fds[i].fd)
+							int j;
+							for (j = 0; j < serverIndex.size(); j++)
 							{
-								std::cout << "This should timeout, i = " << i << std::endl;
-								std::string body = "Connection timeout";
-								std::string response = serverList.at(serverIndex.at(j).second).makeHeader(500, body.size());
-								response.append(body);
-								std::cout << "This far" << std::endl;
-								send(fds[i].fd, response.c_str(), response.length(), 0);
-								cgiOnGoing[i] = 0;
-								pids.erase(pids.begin() + k);
-								std::cout << "Got to end" << std::endl;
+								if (serverIndex.at(j).first == fds[i].fd)
+								{
+									std::cout << "This should timeout, i = " << i << " and fd = " << fds[i].fd << std::endl;
+									std::cout << "Last message happened at" << fdsTimestamps[i] << std::endl;
+									std::string body = "Connection timeout";
+									std::string response = serverList.at(serverIndex.at(j).second).makeHeader(500, body.size());
+									response.append(body);
+									send(fds[i].fd, response.c_str(), response.length(), 0);
+									cgiOnGoing[i] = 0;
+									// pids.erase(pids.begin() + k);
+									newPids.erase(newPids.begin() + k);
+									k--;
+									std::string fullName = serverList.at(serverIndex.at(j).second).getRootDir();
+									fullName.append("temp");
+									unlink(fullName.c_str());
+								}
 							}
 						}
-					}
-					else if (result == pids.at(k))
-					{
-						int j;
-						for (j = 0; j < serverIndex.size(); j++)
+						else if (result == newPids.at(k).first)
 						{
-							if (serverIndex.at(j).first == fds[i].fd)
+							std::cout << "THE BEGINNING" << std::endl;
+							std::cout << "pid here = " << newPids.at(k).first << " and result = " << result << std::endl;
+							int j;
+							for (j = 0; j < serverIndex.size(); j++)
 							{
-								std::cout << "Working" << std::endl;
-								std::string temp = "temp";
-								std::string fullName = serverList.at(serverIndex.at(j).second).getRootDir();
-								temp.append(std::to_string(i));
-								fullName.append(temp);
-								std::cout << "Full name (including directory) = " << fullName << std::endl;
-								std::cout << "Name of temp file = " << temp << std::endl;
-								std::string response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(temp, "");
-								unlink(fullName.c_str());
-								send(fds[i].fd, response.c_str(), response.length(), 0);
-								cgiOnGoing[i] = 0;
-								pids.erase(pids.begin() + k);
+								if (serverIndex.at(j).first == fds[i].fd)
+								{
+									std::cout << "Working" << std::endl;
+									std::string temp = "temp";
+									std::string fullName = serverList.at(serverIndex.at(j).second).getRootDir();
+									temp.append(std::to_string(i));
+									fullName.append(temp);
+									std::cout << "Full name (including directory) = " << fullName << std::endl;
+									std::cout << "Name of temp file = " << temp << std::endl;
+									std::cout << "pid here = " << newPids.at(k).first << " and result = " << result << std::endl;
+									std::string response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(temp, "");
+									unlink(fullName.c_str());
+									send(fds[i].fd, response.c_str(), response.length(), 0);
+									cgiOnGoing[i] = 0;
+									// pids.erase(pids.begin() + k);
+									newPids.erase(newPids.begin() + k);
+									k--;
+								}
 							}
 						}
 					}
@@ -533,9 +561,11 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 			{
 				std::cout << "Doing cgi" << std::endl;
 				int pid;
+				std::cout << "FORKING" << std::endl;
 				pid = fork();
 				if (pid < 0)
 				{
+					std::cout << "ERROR piderror" << std::endl; 
 					std::string body = "Internal server error";
 					response = serverList.at(serverIndex.at(j).second).makeHeader(500, body.size());
 					response.append(body);
@@ -568,6 +598,7 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 				{
 					std::cout << "pid is " << pid << std::endl;
 					pids.push_back(pid);
+					newPids.push_back(std::make_pair(pid, i));
 				}
 
 			}

@@ -4,7 +4,7 @@
 # include "socket.hpp"
 # include "server.hpp"
 
-# define RESPONSE_TIMEOUT 2
+# define RESPONSE_TIMEOUT 60
 # define CONNECTION_TIMEOUT 120
 
 class Manager
@@ -12,6 +12,7 @@ class Manager
 private:
 	int numOfServers;
 	std::vector<int> pids;
+	std::vector<std::pair<int, int> > newPids;
 	std::vector<Server> serverList;
 	std::vector<std::pair<int, int> > serverIndex;
 	std::vector<struct pollfd> fds;
