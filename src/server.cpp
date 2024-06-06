@@ -2,7 +2,6 @@
 
 Server::Server()
 {
-	this->listener = listeningSocket(DEFAULTPORT);
 	this->servName = "defaultserv";
 	this->port = DEFAULTPORT;
 	this->error404Dir = DEFAULT404DIR;
@@ -21,7 +20,6 @@ Server::~Server()
 Server::Server(const Server &var)
 {
 	this->port = var.port;
-	this->listener = var.listener;
 	this->servName = var.servName;
 	this->rootDir = var.rootDir;
 	this->error404Dir = var.error404Dir;
@@ -38,7 +36,6 @@ Server &Server::operator=(const Server &var)
 	if (this != &var)
 	{
 		this->port = var.port;
-		this->listener = var.listener;
 		this->servName = var.servName;
 		this->rootDir = var.rootDir;
 		this->error404Dir = var.error404Dir;
@@ -305,7 +302,7 @@ void Server::makeSocket(int portNum)
 {
 	listeningSocket newSocket(portNum);
 	setnonblocking(newSocket.getServerFd()); // Set the listening socket to non-blocking mode
-	this->listener = newSocket;				 // Add the new socket to the list
+	// this->listener = newSocket;				 // Add the new socket to the list
 	std::cout << "Socket for port " << portNum << " created and added to the list." << std::endl;
 }
 

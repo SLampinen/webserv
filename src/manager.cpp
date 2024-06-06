@@ -16,6 +16,7 @@ Manager::Manager(const Manager &var)
 	this->serverList = var.serverList;
 	this->serverIndex = var.serverIndex;
 	this->data = var.data;
+	this->fdsTimestamps = var.fdsTimestamps;
 }
 
 Manager &Manager::operator=(const Manager &var)
@@ -26,6 +27,7 @@ Manager &Manager::operator=(const Manager &var)
 		this->serverList = var.serverList;
 		this->serverIndex = var.serverIndex;
 		this->data = var.data;
+		this->fdsTimestamps = var.fdsTimestamps;
 	}
 	return (*this);
 }
@@ -187,6 +189,7 @@ void Manager::run(std::string configFile)
             pfd.fd = serverList.at(i).listeners.at(k).getServerFd();
             pfd.events = POLLIN;
             fds.push_back(pfd);
+			fdsTimestamps.push_back(2147483647);
 			cgiOnGoing.push_back(0);
 
         }
@@ -235,6 +238,7 @@ void Manager::run(std::string configFile)
                                 clientPfd.fd = clientFd;
                                 clientPfd.events = POLLIN;
                                 fds.push_back(clientPfd);
+								fdsTimestamps.push_back(time(NULL));
 								cgiOnGoing.push_back(0);
 								serverIndex.push_back(std::make_pair(clientFd, j));
 								std::cout << "here, i, j, k are "<< i << " " << j << " " << k << std::endl;
@@ -263,6 +267,7 @@ void Manager::run(std::string configFile)
                             std::cerr << "Recv error: " << strerror(errno) << std::endl;
                             close(fds[i].fd);
                             fds.erase(fds.begin() + i);
+							fdsTimestamps.erase(fdsTimestamps.begin() + i);
 							cgiOnGoing.erase(cgiOnGoing.begin() + i);
                             i--; // Adjust index after erasing
                             continue;
@@ -273,6 +278,7 @@ void Manager::run(std::string configFile)
                         // Connection closed by client
                         close(fds[i].fd);
                         fds.erase(fds.begin() + i);
+						fdsTimestamps.erase(fdsTimestamps.begin() + i);
 						cgiOnGoing.erase(cgiOnGoing.begin() + i);
                         i--; // Adjust index after erasing
                         continue;
@@ -295,21 +301,25 @@ void Manager::run(std::string configFile)
 						if (receivedData.find("GET") != std::string::npos)
 						{
 							std::cout << "GETTING" << std::endl;
+							fdsTimestamps[i] = time(NULL);
 							handleGet(receivedData, fds, i);
 						}
 						else if (receivedData.find("POST") != std::string::npos)
 						{
 							std::cout << "POSTING" << std::endl;
+							fdsTimestamps[i] = time(NULL);
 							handlePost(receivedData, fds, i);
 						}
 						else if (receivedData.find("DELETE") != std::string::npos)
 						{
 							std::cout << "DELETING" << std::endl;
+							fdsTimestamps[i] = time(NULL);
 							handleDelete(receivedData, fds, i);
 						}
 						else
 						{
 							std::cout << "OTHER METHOD" << std::endl;
+							fdsTimestamps[i] = time(NULL);
 							handleOther(receivedData, fds, i);
 						}
                     }
@@ -323,38 +333,60 @@ void Manager::run(std::string configFile)
 				int result = waitpid(0, &status, WNOHANG);
 				int k;
 				//check which, if any have work done
-				if (result > 0)
+				for (k = 0; k < pids.size(); k++)
 				{
-					for (k = 0; k < pids.size(); k++)
+					if (time(NULL) - fdsTimestamps[i] > RESPONSE_TIMEOUT)
 					{
-						if (result == pids.at(k))
+						int j;
+						for (j = 0; j < serverIndex.size(); j++)
 						{
-							int j;
-							for (j = 0; j < serverIndex.size(); j++)
+							if (serverIndex.at(j).first == fds[i].fd)
 							{
-								if (serverIndex.at(j).first == fds[i].fd)
-								{
-									std::cout << "Working" << std::endl;
-									std::string temp = "temp";
-									std::string fullName = serverList.at(serverIndex.at(j).second).getRootDir();
-									temp.append(std::to_string(i));
-									fullName.append(temp);
-									std::cout << "Full name (including directory) = " << fullName << std::endl;
-									std::cout << "Name of temp file = " << temp << std::endl;
-									std::string response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(temp, "");
-									unlink(fullName.c_str());
-									send(fds[i].fd, response.c_str(), response.length(), 0);
-									cgiOnGoing[i] = 0;
-									pids.erase(pids.begin() + k);
-								}
+								std::cout << "This should timeout, i = " << i << std::endl;
+								std::string body = "Connection timeout";
+								std::string response = serverList.at(serverIndex.at(j).second).makeHeader(500, body.size());
+								response.append(body);
+								std::cout << "This far" << std::endl;
+								send(fds[i].fd, response.c_str(), response.length(), 0);
+								cgiOnGoing[i] = 0;
+								pids.erase(pids.begin() + k);
+								std::cout << "Got to end" << std::endl;
+							}
+						}
+					}
+					else if (result == pids.at(k))
+					{
+						int j;
+						for (j = 0; j < serverIndex.size(); j++)
+						{
+							if (serverIndex.at(j).first == fds[i].fd)
+							{
+								std::cout << "Working" << std::endl;
+								std::string temp = "temp";
+								std::string fullName = serverList.at(serverIndex.at(j).second).getRootDir();
+								temp.append(std::to_string(i));
+								fullName.append(temp);
+								std::cout << "Full name (including directory) = " << fullName << std::endl;
+								std::cout << "Name of temp file = " << temp << std::endl;
+								std::string response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(temp, "");
+								unlink(fullName.c_str());
+								send(fds[i].fd, response.c_str(), response.length(), 0);
+								cgiOnGoing[i] = 0;
+								pids.erase(pids.begin() + k);
 							}
 						}
 					}
 				}
 			}
-			//connection time-out handled here
-
-			
+			if (time(NULL) - fdsTimestamps[i] > CONNECTION_TIMEOUT)
+			{
+				std::cout << "Closing connection due to inactivity" << std::endl;
+				close(fds[i].fd);
+				fds.erase(fds.begin() + i);
+				fdsTimestamps.erase(fdsTimestamps.begin() + i);
+				cgiOnGoing.erase(cgiOnGoing.begin() + i);
+				i--;
+			}
         }
     }
 }

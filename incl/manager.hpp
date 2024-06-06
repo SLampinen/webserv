@@ -4,6 +4,9 @@
 # include "socket.hpp"
 # include "server.hpp"
 
+# define RESPONSE_TIMEOUT 2
+# define CONNECTION_TIMEOUT 120
+
 class Manager
 {
 private:
@@ -17,6 +20,7 @@ private:
 	std::vector<std::string> data;
 
 	//testing this for timeout
+	std::vector<int> fdsTimestamps;
 
 public:
 	Manager();

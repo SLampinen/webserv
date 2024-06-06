@@ -5,7 +5,6 @@
 
 # define DEFAULTCONFIG "incl/config.conf"
 # define DEFAULT404DIR "error/404Default.html"
-# define CONNECTION_TIMEOUT 5
 # define POLL_TIMEOUT 1000
 
 class Server
@@ -59,7 +58,6 @@ public:
 	void log(std::string text);
 	void print(void);
 
-	listeningSocket listener;
 	std::vector<listeningSocket> listeners;
 };
 

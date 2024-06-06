@@ -10,7 +10,6 @@ private:
 	struct sockaddr_in address;
 	int port;
 	int newSocket;
-	time_t timeOfLastMsg;
 public:
 	listeningSocket();
 	listeningSocket(int portNum);
