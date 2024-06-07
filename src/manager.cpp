@@ -204,9 +204,9 @@ void Manager::run(std::string configFile)
             continue;
         }
 		std::cout << "new round " << std::endl;
-        for (size_t i = 0; i < fds.size(); i++) 
+        for (size_t index = 0; index < fds.size(); index++) 
 		{
-            if (fds[i].revents & POLLIN) 
+            if (fds[index].revents & POLLIN) 
 			{
                 // Iterate over each server and its listeners to find the matching serverFd
                 bool newConnection = false;
@@ -214,14 +214,14 @@ void Manager::run(std::string configFile)
 				{
                     for (int k = 0; k < serverList.at(j).getNumOfPorts(); k++) 
 					{
-                        if (fds[i].fd == serverList.at(j).listeners.at(k).getServerFd()) 
+                        if (fds[index].fd == serverList.at(j).listeners.at(k).getServerFd()) 
 						{
                             std::cout << "new connection" << std::endl;
                             while (true) 
 							{
                                 struct sockaddr_in clientAddr;
                                 socklen_t clientAddrLen = sizeof(clientAddr);
-                                int clientFd = accept(fds[i].fd, (struct sockaddr*)&clientAddr, &clientAddrLen);
+                                int clientFd = accept(fds[index].fd, (struct sockaddr*)&clientAddr, &clientAddrLen);
                                 if (clientFd < 0) 
 								{
                                     if (errno == EWOULDBLOCK || errno == EAGAIN) 
@@ -243,7 +243,7 @@ void Manager::run(std::string configFile)
 								fdsTimestamps.push_back(time(NULL));
 								cgiOnGoing.push_back(0);
 								serverIndex.push_back(std::make_pair(clientFd, j));
-								std::cout << "here, i, j, k are "<< i << " " << j << " " << k << std::endl;
+								std::cout << "here, i, j, k are "<< index << " " << j << " " << k << std::endl;
                             }
                             newConnection = true;
                             break;
@@ -255,7 +255,7 @@ void Manager::run(std::string configFile)
 				{
                     // Handle communication with the client
                     char buffer[1024];
-                    int bytesReceived = recv(fds[i].fd, buffer, sizeof(buffer), 0);
+                    int bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
                     if (bytesReceived < 0)
 					{
 						//Is this legal? or is this checking errno immediatly after read operation?
@@ -267,11 +267,11 @@ void Manager::run(std::string configFile)
 						else
 						{
                             std::cerr << "Recv error: " << strerror(errno) << std::endl;
-                            close(fds[i].fd);
-                            fds.erase(fds.begin() + i);
-							fdsTimestamps.erase(fdsTimestamps.begin() + i);
-							cgiOnGoing.erase(cgiOnGoing.begin() + i);
-                            i--; // Adjust index after erasing
+                            close(fds[index].fd);
+                            fds.erase(fds.begin() + index);
+							fdsTimestamps.erase(fdsTimestamps.begin() + index);
+							cgiOnGoing.erase(cgiOnGoing.begin() + index);
+                            index--; // Adjust index after erasing
                             continue;
                         }
                     }
@@ -279,106 +279,86 @@ void Manager::run(std::string configFile)
 					{
                         // Connection closed by client
 						std::cout << std::endl << "Client closed connection" << std::endl;
-                        close(fds[i].fd);
-                        fds.erase(fds.begin() + i);
-						fdsTimestamps.erase(fdsTimestamps.begin() + i);
-						cgiOnGoing.erase(cgiOnGoing.begin() + i);
-                        i--; // Adjust index after erasing
+                        close(fds[index].fd);
+                        fds.erase(fds.begin() + index);
+						fdsTimestamps.erase(fdsTimestamps.begin() + index);
+						cgiOnGoing.erase(cgiOnGoing.begin() + index);
+                        index--; // Adjust index after erasing
                         continue;
                     }
 					else
 					{
 						//if request too large
                         std::string receivedData(buffer, bytesReceived);
-						bytesReceived = recv(fds[i].fd, buffer, sizeof(buffer), 0);
+						bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 						while (bytesReceived > 0)
 						{
 							std::string rest(buffer, bytesReceived);
 							receivedData.append(rest);
-							bytesReceived = recv(fds[i].fd, buffer, sizeof(buffer), 0);
+							bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 						}
 
                         // Process the received data
                         // std::cout << "Received data: " << std::endl << receivedData << std::endl;
 						
+						fdsTimestamps[index] = time(NULL);
+						cgiOnGoing[index] = 0;
+						for (int k = 0; k < newPids.size(); k++)
+						{
+							if (index == newPids.at(k).second)
+								newPids.erase(newPids.begin() + k);
+						}
+						
 						if (receivedData.find("GET") != std::string::npos)
 						{
 							std::cout << "GETTING" << std::endl;
-							fdsTimestamps[i] = time(NULL);
-							cgiOnGoing[i] = 0;
-							for (int k = 0; k < newPids.size(); k++)
-							{
-								if (i == newPids.at(k).second)
-									newPids.erase(newPids.begin() + k);
-							}
-							handleGet(receivedData, fds, i);
+							handleGet(receivedData, fds, index);
 						}
 						else if (receivedData.find("POST") != std::string::npos)
 						{
 							std::cout << "POSTING" << std::endl;
-							fdsTimestamps[i] = time(NULL);
-							cgiOnGoing[i] = 0;
-							for (int k = 0; k < newPids.size(); k++)
-							{
-								if (i == newPids.at(k).second)
-									newPids.erase(newPids.begin() + k);
-							}
-							handlePost(receivedData, fds, i);
+							handlePost(receivedData, fds, index);
 						}
 						else if (receivedData.find("DELETE") != std::string::npos)
 						{
 							std::cout << "DELETING" << std::endl;
-							fdsTimestamps[i] = time(NULL);
-							cgiOnGoing[i] = 0;
-							for (int k = 0; k < newPids.size(); k++)
-							{
-								if (i == newPids.at(k).second)
-									newPids.erase(newPids.begin() + k);
-							}
-							handleDelete(receivedData, fds, i);
+							handleDelete(receivedData, fds, index);
 						}
 						else
 						{
 							std::cout << "OTHER METHOD" << std::endl;
-							fdsTimestamps[i] = time(NULL);
-							cgiOnGoing[i] = 0;
-							for (int k = 0; k < newPids.size(); k++)
-							{
-								if (i == newPids.at(k).second)
-									newPids.erase(newPids.begin() + k);
-							}
-							handleOther(receivedData, fds, i);
+							handleOther(receivedData, fds, index);
 						}
                     }
                 }
             }
-			if (cgiOnGoing[i] == 1)
+			if (cgiOnGoing[index] == 1)
 			{
 				//check if cgi has done the work and if yes send response
-				std::cout << "Checking and working and all that for i = " << i << std::endl;
+				std::cout << "Checking and working and all that for i = " << index << std::endl;
 				int status;
-				int result = waitpid(0, &status, WNOHANG);
+				int deadChildPid = waitpid(0, &status, WNOHANG);
 				int k;
 				//check which, if any have work done
-				if (result > 0)
+				if (deadChildPid > 0)
 				{
 					// for (k = 0; k < pids.size(); k++)
 					for (k = 0; k < newPids.size(); k++)
 					{
-						if (time(NULL) - fdsTimestamps[i] > RESPONSE_TIMEOUT)
+						if (time(NULL) - fdsTimestamps[index] > RESPONSE_TIMEOUT)
 						{
 							int j;
 							for (j = 0; j < serverIndex.size(); j++)
 							{
-								if (serverIndex.at(j).first == fds[i].fd)
+								if (serverIndex.at(j).first == fds[index].fd)
 								{
-									std::cout << "This should timeout, i = " << i << " and fd = " << fds[i].fd << std::endl;
-									std::cout << "Last message happened at" << fdsTimestamps[i] << std::endl;
+									std::cout << "This should timeout, i = " << index << " and fd = " << fds[index].fd << std::endl;
+									std::cout << "Last message happened at" << fdsTimestamps[index] << std::endl;
 									std::string body = "Connection timeout";
 									std::string response = serverList.at(serverIndex.at(j).second).makeHeader(500, body.size());
 									response.append(body);
-									send(fds[i].fd, response.c_str(), response.length(), 0);
-									cgiOnGoing[i] = 0;
+									send(fds[index].fd, response.c_str(), response.length(), 0);
+									cgiOnGoing[index] = 0;
 									// pids.erase(pids.begin() + k);
 									newPids.erase(newPids.begin() + k);
 									k--;
@@ -388,46 +368,48 @@ void Manager::run(std::string configFile)
 								}
 							}
 						}
-						else if (result == newPids.at(k).first)
+						else if (deadChildPid == newPids.at(k).first)
 						{
 							std::cout << "THE BEGINNING" << std::endl;
-							std::cout << "pid here = " << newPids.at(k).first << " and result = " << result << std::endl;
+							std::cout << "pid here = " << newPids.at(k).first << " and result = " << deadChildPid << std::endl;
 							int j;
 							for (j = 0; j < serverIndex.size(); j++)
 							{
-								if (serverIndex.at(j).first == fds[i].fd)
+								if (serverIndex.at(j).first == fds[index].fd)
 								{
 									std::cout << "Working" << std::endl;
 									std::string temp = "temp";
 									std::string fullName = serverList.at(serverIndex.at(j).second).getRootDir();
-									temp.append(std::to_string(i));
+									temp.append(std::to_string(index));
 									fullName.append(temp);
 									std::cout << "Full name (including directory) = " << fullName << std::endl;
 									std::cout << "Name of temp file = " << temp << std::endl;
-									std::cout << "pid here = " << newPids.at(k).first << " and result = " << result << std::endl;
+									std::cout << "pid here = " << newPids.at(k).first << " and result = " << deadChildPid << std::endl;
 									std::string response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(temp, "");
 									unlink(fullName.c_str());
-									send(fds[i].fd, response.c_str(), response.length(), 0);
-									cgiOnGoing[i] = 0;
+									send(fds[index].fd, response.c_str(), response.length(), 0);
+									cgiOnGoing[index] = 0;
 									// pids.erase(pids.begin() + k);
+									std::cout << "k = " << k << std::endl;
+									std::cout << "newPids.size() = " << newPids.size() << std::endl;
 									newPids.erase(newPids.begin() + k);
-									k--;
 									if (k == 0)
 										break;
+									k--;
 								}
 							}
 						}
 					}
 				}
 			}
-			if (time(NULL) - fdsTimestamps[i] > CONNECTION_TIMEOUT)
+			if (time(NULL) - fdsTimestamps[index] > CONNECTION_TIMEOUT)
 			{
 				std::cout << "Closing connection due to inactivity" << std::endl;
-				close(fds[i].fd);
-				fds.erase(fds.begin() + i);
-				fdsTimestamps.erase(fdsTimestamps.begin() + i);
-				cgiOnGoing.erase(cgiOnGoing.begin() + i);
-				i--;
+				close(fds[index].fd);
+				fds.erase(fds.begin() + index);
+				fdsTimestamps.erase(fdsTimestamps.begin() + index);
+				cgiOnGoing.erase(cgiOnGoing.begin() + index);
+				index--;
 			}
         }
     }
