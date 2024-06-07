@@ -5,6 +5,7 @@
 # include "server.hpp"
 
 // Connection timeout must be greater than response timeout
+// lest great horrors emerge
 # define RESPONSE_TIMEOUT 60
 # define CONNECTION_TIMEOUT 120
 
@@ -21,6 +22,7 @@ private:
 	std::vector<int> cgiOnGoing;
 	std::vector<int> fdsTimestamps;
 
+	// for testing and debugging purposes
 	// we may not need this in full project
 	std::vector<std::string> data;
 

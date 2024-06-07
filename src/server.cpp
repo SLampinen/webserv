@@ -330,10 +330,6 @@ int Server::getNumOfPorts(void)
 	return this->numOfPorts;
 }
 
-int Server::getNthPort(int n)
-{
-	return this->ports.at(n);
-}
 
 void Server::makeSocketList()
 {

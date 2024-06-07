@@ -528,13 +528,15 @@ int Manager::readConfig(std::string fileName)
 				}
 				
 			}
-			newServer.makeSocketList();
-			serverList.push_back(newServer);
 			std::cout << "end of server block" <<std::endl;
-			if (newServer.getNumOfPorts() == 0)
+			if (newServer.getNumOfPorts() > 0)
+			{
+				newServer.makeSocketList();
+				serverList.push_back(newServer);
+			}
+			else
 			{
 				std::cout << "ERROR: Server has 0 ports" << std::endl;
-				return 0;
 			}
 		}
 	}

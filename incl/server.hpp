@@ -31,10 +31,10 @@ public:
 	std::string makeHeader(int responseStatus, int responseSize);
 	std::string buildHTTPResponse(std::string fileName, std::string fileExt);
 
+	//Not used at the moment
 	std::string getMIMEType(std::string fileExt);
 
 	std::string getServerName(void);
-	int getNthPort(int n);
 	std::string getCGIExt(void);
 	std::string getCGIPath(void);
 	int getNumOfPorts(void);
@@ -42,8 +42,8 @@ public:
 	std::string getRootDir(void);
 
 	void makeSocketList(void);
-	void addPort(int port);
 
+	void addPort(int port);
 	void setServerName(std::string name);
 	void setRootDir(std::string dir);
 	void setErrorDir(std::string dir);
