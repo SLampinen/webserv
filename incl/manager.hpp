@@ -4,31 +4,34 @@
 # include "socket.hpp"
 # include "server.hpp"
 
+// Connection timeout must be greater than response timeout
 # define RESPONSE_TIMEOUT 60
 # define CONNECTION_TIMEOUT 120
 
 class Manager
 {
 private:
-	int numOfServers;
-	std::vector<int> pids;
-	std::vector<std::pair<int, int> > newPids;
+	
 	std::vector<Server> serverList;
 	std::vector<std::pair<int, int> > serverIndex;
+
+	std::vector<std::pair<int, int> > newPids;
+
 	std::vector<struct pollfd> fds;
 	std::vector<int> cgiOnGoing;
+	std::vector<int> fdsTimestamps;
+
 	// we may not need this in full project
 	std::vector<std::string> data;
-
-	//testing this for timeout
-	std::vector<int> fdsTimestamps;
 
 public:
 	Manager();
 	~Manager();
 	Manager(const Manager &var);
 	Manager& operator=(const Manager &var);
+
 	void run(std::string configFile);
+
 	int readConfig(std::string fileName);
 
 	void handleGet(std::string receivedData, std::vector <struct pollfd> fds, int i);

@@ -3,13 +3,11 @@
 Server::Server()
 {
 	this->servName = "defaultserv";
-	this->port = DEFAULTPORT;
 	this->error404Dir = DEFAULT404DIR;
 	this->cgiExt = "";
 	this->cgiPath = "";
 	this->client_max_body_size = 0;
 	this->numOfPorts = 0;
-	this->ports.push_back(DEFAULTPORT);
 }
 
 Server::~Server()
@@ -19,7 +17,6 @@ Server::~Server()
 
 Server::Server(const Server &var)
 {
-	this->port = var.port;
 	this->servName = var.servName;
 	this->rootDir = var.rootDir;
 	this->error404Dir = var.error404Dir;
@@ -35,7 +32,6 @@ Server &Server::operator=(const Server &var)
 {
 	if (this != &var)
 	{
-		this->port = var.port;
 		this->servName = var.servName;
 		this->rootDir = var.rootDir;
 		this->error404Dir = var.error404Dir;
@@ -71,16 +67,6 @@ std::string Server::getServerName(void)
 void Server::setServerName(std::string name)
 {
 	this->servName = name;
-}
-
-int Server::getPort(void)
-{
-	return this->port;
-}
-
-void Server::setPort(int portNum)
-{
-	this->port = portNum;
 }
 
 void Server::setRootDir(std::string dir)
@@ -299,14 +285,6 @@ void setnonblocking(int sockfd)
 	fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
 }
 
-void Server::makeSocket(int portNum)
-{
-	listeningSocket newSocket(portNum);
-	setnonblocking(newSocket.getServerFd()); // Set the listening socket to non-blocking mode
-	// this->listener = newSocket;				 // Add the new socket to the list
-	std::cout << "Socket for port " << portNum << " created and added to the list." << std::endl;
-}
-
 void Server::log(std::string text)
 {
 	std::ofstream logfile;
@@ -342,10 +320,7 @@ void Server::addPort(int port)
 	std::cout << "HERE, i = " << i << " numOfports = " << numOfPorts << std::endl;
 	if (i == numOfPorts)
 	{
-		if (i == 0)
-			ports.at(i) = port;
-		else
-			ports.push_back(port);
+		ports.push_back(port);
 		numOfPorts++;
 	}
 }

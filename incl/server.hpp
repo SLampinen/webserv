@@ -10,7 +10,6 @@
 class Server
 {
 private:
-	int port;
 	int numOfPorts;
 	std::vector<int> ports;
 	std::string servName;
@@ -35,7 +34,6 @@ public:
 	std::string getMIMEType(std::string fileExt);
 
 	std::string getServerName(void);
-	int getPort(void);
 	int getNthPort(int n);
 	std::string getCGIExt(void);
 	std::string getCGIPath(void);
@@ -43,11 +41,9 @@ public:
 	int getClientBodySize(void);
 	std::string getRootDir(void);
 
-	void makeSocket(int portNum);
 	void makeSocketList(void);
 	void addPort(int port);
 
-	void setPort(int portNum);
 	void setServerName(std::string name);
 	void setRootDir(std::string dir);
 	void setErrorDir(std::string dir);

@@ -2,7 +2,7 @@
 
 Manager::Manager()
 {
-	numOfServers = 0;
+
 }
 
 Manager::~Manager()
@@ -12,9 +12,12 @@ Manager::~Manager()
 
 Manager::Manager(const Manager &var)
 {
-	this->numOfServers = var.numOfServers;
+	this->newPids = var.newPids;
 	this->serverList = var.serverList;
 	this->serverIndex = var.serverIndex;
+	this->fds = var.fds;
+	this->cgiOnGoing = var.cgiOnGoing;
+
 	this->data = var.data;
 	this->fdsTimestamps = var.fdsTimestamps;
 }
@@ -23,9 +26,12 @@ Manager &Manager::operator=(const Manager &var)
 {
 	if (this != &var)
 	{
-		this->numOfServers = var.numOfServers;
+		this->newPids = var.newPids;
 		this->serverList = var.serverList;
 		this->serverIndex = var.serverIndex;
+		this->fds = var.fds;
+		this->cgiOnGoing = var.cgiOnGoing;
+
 		this->data = var.data;
 		this->fdsTimestamps = var.fdsTimestamps;
 	}
@@ -179,9 +185,9 @@ void Manager::run(std::string configFile)
         return;
     }
     std::cout << "--------------------------------------------------" << std::endl
-              << "number of servers = " << numOfServers << std::endl;
+              << "number of servers = " << serverList.size() << std::endl;
 
-    for (int i = 0; i < numOfServers; i++) 
+    for (int i = 0; i < serverList.size(); i++) 
 	{
         serverList.at(i).print();
         for (int k = 0; k < serverList.at(i).getNumOfPorts(); k++) 
@@ -210,7 +216,7 @@ void Manager::run(std::string configFile)
 			{
                 // Iterate over each server and its listeners to find the matching serverFd
                 bool newConnection = false;
-                for (int j = 0; j < numOfServers; j++) 
+                for (int j = 0; j < serverList.size(); j++) 
 				{
                     for (int k = 0; k < serverList.at(j).getNumOfPorts(); k++) 
 					{
@@ -298,9 +304,7 @@ void Manager::run(std::string configFile)
 							bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 						}
 
-                        // Process the received data
-                        // std::cout << "Received data: " << std::endl << receivedData << std::endl;
-						
+						// If cgi was already working, we can just ignore it and move on
 						fdsTimestamps[index] = time(NULL);
 						cgiOnGoing[index] = 0;
 						for (int k = 0; k < newPids.size(); k++)
@@ -338,12 +342,11 @@ void Manager::run(std::string configFile)
 				std::cout << "Checking and working and all that for i = " << index << std::endl;
 				int status;
 				int deadChildPid = waitpid(0, &status, WNOHANG);
-				int k;
 				//check which, if any have work done
 				if (deadChildPid > 0)
 				{
-					// for (k = 0; k < pids.size(); k++)
-					for (k = 0; k < newPids.size(); k++)
+					std::cout << "Child with pid " << deadChildPid << " is dead" << std::endl;
+					for (int k = 0; k < newPids.size(); k++)
 					{
 						if (time(NULL) - fdsTimestamps[index] > RESPONSE_TIMEOUT)
 						{
@@ -359,8 +362,9 @@ void Manager::run(std::string configFile)
 									response.append(body);
 									send(fds[index].fd, response.c_str(), response.length(), 0);
 									cgiOnGoing[index] = 0;
-									// pids.erase(pids.begin() + k);
 									newPids.erase(newPids.begin() + k);
+									if (k == 0)
+										break;
 									k--;
 									std::string fullName = serverList.at(serverIndex.at(j).second).getRootDir();
 									fullName.append("temp");
@@ -387,9 +391,9 @@ void Manager::run(std::string configFile)
 									std::cout << "pid here = " << newPids.at(k).first << " and result = " << deadChildPid << std::endl;
 									std::string response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(temp, "");
 									unlink(fullName.c_str());
+									std::cout << "Request arrived " << time(NULL) - fdsTimestamps[index] << " seconds ago" << std::endl;
 									send(fds[index].fd, response.c_str(), response.length(), 0);
 									cgiOnGoing[index] = 0;
-									// pids.erase(pids.begin() + k);
 									std::cout << "k = " << k << std::endl;
 									std::cout << "newPids.size() = " << newPids.size() << std::endl;
 									newPids.erase(newPids.begin() + k);
@@ -433,8 +437,6 @@ int Manager::readConfig(std::string fileName)
 		std::getline(configFile, line);
 		if (configFile.eof())
 			break;
-		// std::cout << "line is : " << line << std::endl;
-		//remove comments
 		if (line.find("#") != std::string::npos)
 		{
 			end = line.find("#");
@@ -444,11 +446,10 @@ int Manager::readConfig(std::string fileName)
 		{
 			std::cout << "----------start of server block----------" << std::endl;
 			std::string serverName = "server.num";
-			serverName.append(std::to_string(numOfServers));
+			serverName.append(std::to_string(serverList.size()));
 			Server newServer;
 			std::cout << serverName << std::endl;
 			std::cout << "The (default) name of server is " << newServer.getServerName() << std::endl;
-			numOfServers++;
 			while (1)
 			{
 				std::getline(configFile, line);
@@ -482,7 +483,6 @@ int Manager::readConfig(std::string fileName)
 					if (!wip.empty())
 					{
 						std::cout << "setting port" << std::endl;
-						newServer.setPort(std::stoi(wip));
 						newServer.addPort(std::stoi(wip));
 					}
 				}
@@ -531,7 +531,17 @@ int Manager::readConfig(std::string fileName)
 			newServer.makeSocketList();
 			serverList.push_back(newServer);
 			std::cout << "end of server block" <<std::endl;
+			if (newServer.getNumOfPorts() == 0)
+			{
+				std::cout << "ERROR: Server has 0 ports" << std::endl;
+				return 0;
+			}
 		}
+	}
+	if (serverList.size() == 0)
+	{
+		std::cout << "ERROR: Config file has no servers" << std::endl;
+		return 0;
 	}
 	return 1;
 }
@@ -593,7 +603,6 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 				else
 				{
 					std::cout << "pid is " << pid << std::endl;
-					pids.push_back(pid);
 					newPids.push_back(std::make_pair(pid, i));
 				}
 

@@ -1,7 +1,6 @@
 #ifndef SOCKET_HPP
 # define SOCKET_HPP
 # include "library.hpp"
-# define DEFAULTPORT 8080
 
 class listeningSocket
 {
@@ -16,6 +15,7 @@ public:
 	~listeningSocket();
 	listeningSocket(const listeningSocket &var);
 	listeningSocket& operator=(const listeningSocket &var);
+	
 	struct sockaddr_in getAddress();
 	int getServerFd();
 	int getPortNum();
