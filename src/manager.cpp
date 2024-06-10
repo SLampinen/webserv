@@ -151,7 +151,17 @@ void Manager::handleDelete(std::string receivedData, std::vector <struct pollfd>
 			break;
 		}
 	}
-
+	std::string response;
+	int index;
+	for (index = 0; index < serverIndex.size(); index++)
+	{
+		if (serverIndex.at(index).first == fds[i].fd)
+			break;
+	}
+	std::string body = "OK";
+	response = serverList.at(serverIndex.at(index).second).makeHeader(200, body.size());
+	response.append(body);
+	send(fds[i].fd, response.c_str(), response.length(), 0);
 }
 
 void Manager::handleOther(std::string receivedData, std::vector <struct pollfd> fds, int i)
