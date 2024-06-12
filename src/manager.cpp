@@ -12,12 +12,11 @@ Manager::~Manager()
 
 Manager::Manager(const Manager &var)
 {
-	this->newPids = var.newPids;
+	this->pids = var.pids;
 	this->serverList = var.serverList;
 	this->serverIndex = var.serverIndex;
 	this->fds = var.fds;
 	this->cgiOnGoing = var.cgiOnGoing;
-
 	this->data = var.data;
 	this->fdsTimestamps = var.fdsTimestamps;
 }
@@ -26,12 +25,11 @@ Manager &Manager::operator=(const Manager &var)
 {
 	if (this != &var)
 	{
-		this->newPids = var.newPids;
+		this->pids = var.pids;
 		this->serverList = var.serverList;
 		this->serverIndex = var.serverIndex;
 		this->fds = var.fds;
 		this->cgiOnGoing = var.cgiOnGoing;
-
 		this->data = var.data;
 		this->fdsTimestamps = var.fdsTimestamps;
 	}
@@ -128,7 +126,7 @@ void Manager::handlePost(std::string receivedData, std::vector <struct pollfd> f
 			std::cout << data.at(i).data() << std::endl;
 		}
 	}
-	// the following just send bogus response to see if it works
+	// the following just sends bogus response to see if it works
 		std::string response;
 		std::string buffer;
 		std::ifstream file("www/result.html");
@@ -317,10 +315,10 @@ void Manager::run(std::string configFile)
 						// If cgi was already working, we can just ignore it and move on
 						fdsTimestamps[index] = time(NULL);
 						cgiOnGoing[index] = 0;
-						for (int k = 0; k < newPids.size(); k++)
+						for (int k = 0; k < pids.size(); k++)
 						{
-							if (index == newPids.at(k).second)
-								newPids.erase(newPids.begin() + k);
+							if (index == pids.at(k).second)
+								pids.erase(pids.begin() + k);
 						}
 						
 						if (receivedData.find("GET") != std::string::npos)
@@ -356,7 +354,7 @@ void Manager::run(std::string configFile)
 				if (deadChildPid > 0)
 				{
 					std::cout << "Child with pid " << deadChildPid << " is dead" << std::endl;
-					for (int k = 0; k < newPids.size(); k++)
+					for (int k = 0; k < pids.size(); k++)
 					{
 						if (time(NULL) - fdsTimestamps[index] > RESPONSE_TIMEOUT)
 						{
@@ -372,7 +370,7 @@ void Manager::run(std::string configFile)
 									response.append(body);
 									send(fds[index].fd, response.c_str(), response.length(), 0);
 									cgiOnGoing[index] = 0;
-									newPids.erase(newPids.begin() + k);
+									pids.erase(pids.begin() + k);
 									if (k == 0)
 										break;
 									k--;
@@ -382,10 +380,10 @@ void Manager::run(std::string configFile)
 								}
 							}
 						}
-						else if (deadChildPid == newPids.at(k).first)
+						else if (deadChildPid == pids.at(k).first)
 						{
 							std::cout << "THE BEGINNING" << std::endl;
-							std::cout << "pid here = " << newPids.at(k).first << " and result = " << deadChildPid << std::endl;
+							std::cout << "pid here = " << pids.at(k).first << " and result = " << deadChildPid << std::endl;
 							int j;
 							for (j = 0; j < serverIndex.size(); j++)
 							{
@@ -398,15 +396,15 @@ void Manager::run(std::string configFile)
 									fullName.append(temp);
 									std::cout << "Full name (including directory) = " << fullName << std::endl;
 									std::cout << "Name of temp file = " << temp << std::endl;
-									std::cout << "pid here = " << newPids.at(k).first << " and result = " << deadChildPid << std::endl;
+									std::cout << "pid here = " << pids.at(k).first << " and result = " << deadChildPid << std::endl;
 									std::string response = serverList.at(serverIndex.at(j).second).buildHTTPResponse(temp, "");
 									unlink(fullName.c_str());
 									std::cout << "Request arrived " << time(NULL) - fdsTimestamps[index] << " seconds ago" << std::endl;
 									send(fds[index].fd, response.c_str(), response.length(), 0);
 									cgiOnGoing[index] = 0;
 									std::cout << "k = " << k << std::endl;
-									std::cout << "newPids.size() = " << newPids.size() << std::endl;
-									newPids.erase(newPids.begin() + k);
+									std::cout << "pids.size() = " << pids.size() << std::endl;
+									pids.erase(pids.begin() + k);
 									if (k == 0)
 										break;
 									k--;
@@ -615,7 +613,7 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 				else
 				{
 					std::cout << "pid is " << pid << std::endl;
-					newPids.push_back(std::make_pair(pid, i));
+					pids.push_back(std::make_pair(pid, i));
 				}
 
 			}

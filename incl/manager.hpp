@@ -16,11 +16,11 @@ private:
 	std::vector<Server> serverList;
 	std::vector<std::pair<int, int> > serverIndex;
 
-	std::vector<std::pair<int, int> > newPids;
+	std::vector<std::pair<int, int> > pids;
 
 	std::vector<struct pollfd> fds;
-	std::vector<int> cgiOnGoing;
 	std::vector<int> fdsTimestamps;
+	std::vector<int> cgiOnGoing;
 
 	// for testing and debugging purposes
 	// we may not need this in full project
