@@ -24,7 +24,6 @@ private:
 
 	// for testing and debugging purposes
 	// we may not need this in full project
-	std::vector<std::string> data;
 
 public:
 	Manager();
@@ -42,6 +41,7 @@ public:
 	void handleOther(std::string receivedData, std::vector <struct pollfd> fds, int i);
 
 	void handleCGI(std::string receivedData, std::vector <struct pollfd> fds, int i);
+	void handleUpload(std::string receivedData, std::string boundary, std::vector <struct pollfd> fds, int i);
 };
 
 #endif

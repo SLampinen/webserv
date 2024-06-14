@@ -16,5 +16,10 @@
 <form action="php/action.php" method="get">
 	<button name=""data value="do_action">action button</button>
 </form>
+<form action="/upload" method="post" enctype="multipart/form-data">
+	<label for="file">Choose file to upload</label>
+	<input type="file" id="file" name="file">
+	<button type="submit">Upload</button>
+</form>
 </body>
 </html>

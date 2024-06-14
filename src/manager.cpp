@@ -17,7 +17,6 @@ Manager::Manager(const Manager &var)
 	this->serverIndex = var.serverIndex;
 	this->fds = var.fds;
 	this->cgiOnGoing = var.cgiOnGoing;
-	this->data = var.data;
 	this->fdsTimestamps = var.fdsTimestamps;
 }
 
@@ -30,7 +29,6 @@ Manager &Manager::operator=(const Manager &var)
 		this->serverIndex = var.serverIndex;
 		this->fds = var.fds;
 		this->cgiOnGoing = var.cgiOnGoing;
-		this->data = var.data;
 		this->fdsTimestamps = var.fdsTimestamps;
 	}
 	return (*this);
@@ -109,23 +107,21 @@ void Manager::handlePost(std::string receivedData, std::vector <struct pollfd> f
 			break;
 		}
 	}
-	int start = receivedData.find("data=") + 5;
-	std::string wip = receivedData.substr(start);
-	// std::cout << "data = " << wip << std::endl;
-	if (wip.compare("add") == 0)
-		data.push_back(wip);
-	if (wip.compare("remove") == 0)
+	std::string path;
+	int start = receivedData.find("/") + 1;
+	int end = receivedData.find(" ", start);
+	path = receivedData.substr(start, end - start);
+	start = receivedData.find("boundary=") + 9;
+	end = receivedData.find_first_not_of("-0123456789", start);
+	std::string boundary = receivedData.substr(start, end - start);
+	end = receivedData.find(boundary, end);
+	std::string rawData = receivedData.substr(end);
+	if (path.compare("upload") == 0)
 	{
-		if (data.size() > 0)
-			data.pop_back();
+		handleUpload(rawData, boundary, fds, i);
 	}
-	if (wip.compare("print") == 0)
+	else
 	{
-		for (int i = 0; i < data.size(); i++)
-		{
-			std::cout << data.at(i).data() << std::endl;
-		}
-	}
 	// the following just sends bogus response to see if it works
 		std::string response;
 		std::string buffer;
@@ -137,6 +133,7 @@ void Manager::handlePost(std::string receivedData, std::vector <struct pollfd> f
 		response.append(header);
 		response.append(buffer);
 		send(fds[i].fd, response.c_str(), response.length(), 0);
+	}
 }
 
 void Manager::handleDelete(std::string receivedData, std::vector <struct pollfd> fds, int i)
@@ -320,7 +317,7 @@ void Manager::run(std::string configFile)
 							if (index == pids.at(k).second)
 								pids.erase(pids.begin() + k);
 						}
-						
+						std::cout << "NEW MESSAGE" << std::endl;
 						if (receivedData.find("GET") != std::string::npos)
 						{
 							std::cout << "GETTING" << std::endl;
@@ -620,4 +617,35 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 			break;
 		}
 	}
+}
+
+void Manager::handleUpload(std::string receivedData, std::string boundary, std::vector <struct pollfd> fds, int i)
+{
+	int index;
+	for (index = 0; index < serverIndex.size(); index++)
+	{
+		if (serverIndex.at(index).first == fds[i].fd)
+			break;
+	}
+	
+	std::cout << "This is the data we got: " << receivedData << std::endl;
+	int start = receivedData.find("filename=") + 10;
+	int end = receivedData.find("\"", start);
+	std::cout << start << " and " << end << std::endl;
+	std::string name = receivedData.substr(start, end - start);
+	std::cout << name << std::endl;
+	std::ofstream theFile;
+	name.append(serverList.at(serverIndex.at(index).second).getRootDir());
+	theFile.open(name);
+	start = receivedData.find("Content-Type");
+	start = receivedData.find("\n",start);
+	end  = receivedData.find(boundary, start);
+	std::string fileContent = receivedData.substr(start, end - start);
+	theFile << fileContent;
+	theFile.close();
+	std::string response;
+	std::stringstream responseStream;
+	responseStream << "HTTP/1.1 200 OK\r\nContent-Length: 26\r\n\r\nFile uploaded successfully";
+	response = responseStream.str();
+	send(fds[i].fd, response.c_str(), response.length(), 0);
 }
