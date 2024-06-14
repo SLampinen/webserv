@@ -604,7 +604,13 @@ void Manager::handleCGI(std::string receivedData, std::vector <struct pollfd> fd
 					int fd = open(fName.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0777);
 					dup2(fd, 1);
 					char *cmdArr[] = {const_cast<char *>(path.data()), const_cast<char *>(cmd.data()), NULL};
-					execvp(cmdArr[0], cmdArr);
+					execv(cmdArr[0], cmdArr);
+					std::cerr << strerror(errno) << std::endl;
+					for (size_t i = 0; cmdArr[i]; i++)
+					{
+						std::cerr << cmdArr[i] << std::endl;
+					}
+					
 					exit(0) ;
 				}
 				else
@@ -631,18 +637,24 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	std::cout << "This is the data we got: " << receivedData << std::endl;
 	int start = receivedData.find("filename=") + 10;
 	int end = receivedData.find("\"", start);
-	std::cout << start << " and " << end << std::endl;
 	std::string name = receivedData.substr(start, end - start);
+
 	std::cout << name << std::endl;
+
 	std::ofstream theFile;
-	name.append(serverList.at(serverIndex.at(index).second).getRootDir());
+	std::string root = serverList.at(serverIndex.at(index).second).getRootDir().append("files/");
+	name = root.append(name);
+	std::cout << "name = " << name << std::endl;
 	theFile.open(name);
+
 	start = receivedData.find("Content-Type");
 	start = receivedData.find("\n",start);
 	end  = receivedData.find(boundary, start);
+
 	std::string fileContent = receivedData.substr(start, end - start);
 	theFile << fileContent;
 	theFile.close();
+	
 	std::string response;
 	std::stringstream responseStream;
 	responseStream << "HTTP/1.1 200 OK\r\nContent-Length: 26\r\n\r\nFile uploaded successfully";
