@@ -1,6 +1,7 @@
 #ifndef LIBRARY_HPP
 # define LIBRARY_HPP
 # include <array>
+# include <dirent.h>
 # include <errno.h>
 # include <fcntl.h>
 # include <fstream>

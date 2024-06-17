@@ -183,6 +183,11 @@ std::string Server::makeStatus4xx(int status)
 {
 	if (status == 400)
 		return " Bad Request";
+	
+	if (status == 403)
+	{
+		return " Forbidden";
+	}
 
 	if (status == 404)
 		return " Not Found";
@@ -247,6 +252,7 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	std::stringstream headerStream;
 	std::stringstream responseStream;
 
+
 	// if empty, aka front page
 	if (fileName.empty())
 	{
@@ -264,6 +270,19 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 		}
 		std::getline(file, buffer, '\0');
 		header = makeHeader(200, buffer.size());
+		response.append(header);
+		response.append(buffer);
+		return response;
+	}
+
+	std::string possibleDir = rootDir;
+	possibleDir.append(fileName);
+	DIR *dir = opendir(possibleDir.c_str());
+	if (dir != NULL)
+	{
+		closedir(dir);
+		buffer = "You are trying to access a directory, not file.\nThis is not allowed";
+		header = makeHeader(403, buffer.size());
 		response.append(header);
 		response.append(buffer);
 		return response;

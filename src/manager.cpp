@@ -45,7 +45,7 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 	size_t start = receivedData.find('/');
 	size_t end = receivedData.find(' ', start);
 	std::string file = receivedData.substr(start + 1, end - start - 1);
-	std::string fileExt = ".html";
+	std::string fileExt;
 	std::string fileName;
 	if (file.find('.') != std::string::npos)
 	{
@@ -54,7 +54,6 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 	}
 	else
 		fileName = file;
-	std::cout << "File ext = " << fileExt << std::endl;
 	if (fileExt.find("?") != std::string::npos)
 	{
 		end = fileExt.find("?");
@@ -94,6 +93,7 @@ void Manager::handleGet(std::string receivedData, std::vector <struct pollfd> fd
 			response.append(body);
 		}
 		send(fds[i].fd, response.c_str(), response.length(), 0);
+		std::cout << "Response was " << response << std::endl;
 	}
 }
 
@@ -550,7 +550,6 @@ int Manager::readConfig(std::string fileName)
 					wip = wip.substr(0, end);
 					newServer.setClientBodySize(wip);
 				}
-				
 			}
 			std::cout << "end of server block" <<std::endl;
 			if (newServer.getNumOfPorts() > 0)
@@ -671,7 +670,7 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	start = receivedData.find_first_not_of("\r\n", start);
 	end  = receivedData.find(boundary, start);
 	end = receivedData.find_last_of("\r\n", end);
-	
+
 	std::string fileContent = receivedData.substr(start, end - start - 2);
 	theFile << fileContent;
 	theFile.close();
