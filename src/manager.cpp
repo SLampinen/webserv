@@ -153,8 +153,27 @@ void Manager::handleDelete(std::string receivedData, std::vector <struct pollfd>
 		if (serverIndex.at(index).first == fds[i].fd)
 			break;
 	}
-	std::string body = "OK";
-	response = serverList.at(serverIndex.at(index).second).makeHeader(200, body.size());
+	int start = receivedData.find("/");
+	start = receivedData.find("/", start + 1);
+	int end = receivedData.find(" ", start);
+	std::string path = receivedData.substr(start, end - start);
+	std::string rootedPath = serverList.at(serverIndex.at(index).second).getRootDir();
+	rootedPath.append("files");
+	rootedPath.append(path);
+	std::ifstream file(rootedPath);
+	std::string body;
+	std::cout << "path name = " << rootedPath << std::endl;
+	if (file.good())
+	{
+		body = "OK";
+		unlink(rootedPath.c_str());
+		response = serverList.at(serverIndex.at(index).second).makeHeader(200, body.size());
+	}
+	else
+	{
+		body = "Trying to delete what doesn't exist";
+		response = serverList.at(serverIndex.at(index).second).makeHeader(200, body.size());
+	}
 	response.append(body);
 	send(fds[i].fd, response.c_str(), response.length(), 0);
 }

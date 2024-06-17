@@ -15,6 +15,7 @@ private:
 	std::string servName;
 	std::string rootDir;
 	std::string error404Dir;
+	std::map<int, std::string> errorPages;
 	std::string cgiExt;
 	std::string cgiPath;
 	int client_max_body_size;
