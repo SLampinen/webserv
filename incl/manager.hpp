@@ -22,14 +22,29 @@ private:
 	std::vector<int> fdsTimestamps;
 	std::vector<int> cgiOnGoing;
 
-	// for testing and debugging purposes
-	// we may not need this in full project
-
 public:
 	Manager();
 	~Manager();
 	Manager(const Manager &var);
 	Manager& operator=(const Manager &var);
+
+	void setupPollingforServers();
+
+	void handlePolling();
+
+	bool acceptNewConnections(size_t index);
+
+	void handleClientCommunication(size_t index);
+
+	void handleTimeout(size_t index, int k);
+
+	void handleWorkDone(size_t index, int k);
+
+	void handleCgiWork(size_t index);
+
+	void handlePollEvent(size_t index);
+
+	void closeInactiveConnections(size_t index);
 
 	void run(std::string configFile);
 
@@ -41,6 +56,7 @@ public:
 	void handleOther(std::string receivedData, std::vector <struct pollfd> fds, int i);
 
 	void handleCGI(std::string receivedData, std::vector <struct pollfd> fds, int i);
+
 	void handleUpload(std::string receivedData, std::string boundary, std::vector <struct pollfd> fds, int i);
 };
 

@@ -58,6 +58,7 @@ public:
 	void print(void);
 
 	std::vector<listeningSocket> listeners;
+
 };
 
 #endif
