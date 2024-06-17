@@ -25,6 +25,8 @@ public:
 	Server(const Server &var);
 	Server& operator=(const Server &var);
 
+	std::string makeStatus(int status);
+
 	std::string makeStatus2xx(int status);
 	std::string makeStatus3xx(int status);
 	std::string makeStatus4xx(int status);

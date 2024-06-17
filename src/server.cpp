@@ -20,6 +20,7 @@ Server::Server(const Server &var)
 	this->servName = var.servName;
 	this->rootDir = var.rootDir;
 	this->error404Dir = var.error404Dir;
+	this->errorPages = var.errorPages;
 	this->cgiExt = var.cgiExt;
 	this->cgiPath = var.cgiPath;
 	this->client_max_body_size = var.client_max_body_size;
@@ -35,6 +36,7 @@ Server &Server::operator=(const Server &var)
 		this->servName = var.servName;
 		this->rootDir = var.rootDir;
 		this->error404Dir = var.error404Dir;
+		this->errorPages = var.errorPages;
 		this->cgiExt = var.cgiExt;
 		this->cgiPath = var.cgiPath;
 		this->client_max_body_size = var.client_max_body_size;
@@ -134,6 +136,24 @@ std::string Server::getMIMEType(std::string fileExt)
 	}
 }
 
+std::string Server::makeStatus(int status)
+{
+	for (std::map<int, std::string>::iterator iter = errorPages.begin(); iter != errorPages.end(); iter++)
+	{
+		if (status == iter->first)
+		{
+			std::string errorDir = rootDir;
+			errorDir.append("error/");
+			errorDir.append(iter->second);
+			std::ifstream errormsg(errorDir);
+			std::string buffer;
+			std::getline(errormsg, buffer, '\0');
+			return buffer;
+		}
+	}
+	return "ERROR";
+}
+
 std::string Server::makeStatus2xx(int status)
 {
 	if (status == 200)
@@ -202,6 +222,10 @@ std::string Server::makeHeader(int responseStatus, int responseSize)
 		headerStream << makeStatus4xx(responseStatus) << "\r\n";
 	else if (responseStatus >= 500 && responseStatus <= 599)
 		headerStream << makeStatus5xx(responseStatus) << "\r\n";
+
+	std::stringstream newStream;
+	newStream << makeStatus(responseStatus) << "\r\n";
+	std::cout << newStream.str() << std::endl;
 
 	headerStream << "Content-Length: " << responseSize << "\r\n\r\n";
 	header = headerStream.str();

@@ -668,9 +668,11 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 
 	start = receivedData.find("Content-Type");
 	start = receivedData.find("\n",start);
+	start = receivedData.find_first_not_of("\r\n", start);
 	end  = receivedData.find(boundary, start);
-
-	std::string fileContent = receivedData.substr(start, end - start);
+	end = receivedData.find_last_of("\r\n", end);
+	
+	std::string fileContent = receivedData.substr(start, end - start - 2);
 	theFile << fileContent;
 	theFile.close();
 	
