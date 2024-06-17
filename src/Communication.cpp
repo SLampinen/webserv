@@ -68,7 +68,10 @@ void Manager::handleClientCommunication(size_t index)
 		for (int k = 0; k < pids.size(); k++)
 		{
 			if (index == pids.at(k).second)
+			{
+				kill(pids.at(k).first, 9);
 				pids.erase(pids.begin() + k);
+			}
 		}
 
 		if (receivedData.find("GET") != std::string::npos)

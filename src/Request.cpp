@@ -88,6 +88,7 @@ void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds
 			}
 			else
 			{
+				std::cout << "my fd = " << fds[i].fd << std::endl;
 				std::cout << "Doing cgi" << std::endl;
 				int pid;
 				std::cout << "FORKING" << std::endl;
@@ -177,7 +178,8 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 }
 
 // DELETE
-void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> fds, int i)
+
+void Manager::handleDelete(std::string receivedData, std::vector <struct pollfd> fds, int i)
 {
 	for (int j = 0; j < serverIndex.size(); j++)
 	{
@@ -187,18 +189,34 @@ void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> 
 			break;
 		}
 	}
-
 	std::string response;
 	int index;
-
 	for (index = 0; index < serverIndex.size(); index++)
 	{
 		if (serverIndex.at(index).first == fds[i].fd)
 			break;
 	}
-
-	std::string body = "OK";
-	response = serverList.at(serverIndex.at(index).second).makeHeader(200, body.size());
+	int start = receivedData.find("/");
+	start = receivedData.find("/", start + 1);
+	int end = receivedData.find(" ", start);
+	std::string path = receivedData.substr(start, end - start);
+	std::string rootedPath = serverList.at(serverIndex.at(index).second).getRootDir();
+	rootedPath.append("files");
+	rootedPath.append(path);
+	std::ifstream file(rootedPath);
+	std::string body;
+	std::cout << "path name = " << rootedPath << std::endl;
+	if (file.good())
+	{
+		body = "OK";
+		unlink(rootedPath.c_str());
+		response = serverList.at(serverIndex.at(index).second).makeHeader(200, body.size());
+	}
+	else
+	{
+		body = "Trying to delete what doesn't exist";
+		response = serverList.at(serverIndex.at(index).second).makeHeader(200, body.size());
+	}
 	response.append(body);
 	send(fds[i].fd, response.c_str(), response.length(), 0);
 }

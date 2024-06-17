@@ -4,15 +4,20 @@
 void Manager::handleTimeout(size_t index, int k)
 {
 	std::cout << "This should timeout, i = " << index << " and fd = " << fds[index].fd << std::endl;
-	std::cout << "Last message happened at" << fdsTimestamps[index] << std::endl;
+	std::cout << "Last message happened at " << fdsTimestamps[index] << std::endl;
 	std::string body = "Connection timeout";
-	std::string response = serverList.at(serverIndex.at(k).second).makeHeader(500, body.size());
+	std::string response = serverList.at(serverIndex.at(k).second).makeHeader(408, body.size());
+	std::cout << "NOW resp = " << response << std::endl;
 	response.append(body);
+	std::cout << "AFTER resp = " << response << std::endl;
 	send(fds[index].fd, response.c_str(), response.length(), 0);
 	cgiOnGoing[index] = 0;
+	std::cout << "Killed at timeout" << std::endl;
+	kill(pids.at(k).first, 9);
 	pids.erase(pids.begin() + k);
 	std::string fullName = serverList.at(serverIndex.at(k).second).getRootDir();
 	fullName.append("temp");
+	fullName.append(std::to_string(index));
 	unlink(fullName.c_str());
 }
 
@@ -38,6 +43,24 @@ void Manager::handleWorkDone(size_t index, int k)
 void Manager::handleCgiWork(size_t index)
 {
 	std::cout << "Checking and working and all that for i = " << index << std::endl;
+	for (int k = 0; k < pids.size(); k++)
+	{
+		std::cout << time(NULL) - fdsTimestamps[index] << std::endl;
+		if (time(NULL) - fdsTimestamps[index] > RESPONSE_TIMEOUT)
+		{
+			for (int j = 0; j < serverIndex.size(); j++)
+			{
+				std::cout << "j = " << j << std::endl;
+				if (serverIndex.at(j).first == fds[index].fd)
+				{
+					handleTimeout(index, k);
+					if (k == 0)
+						break;
+					k--;
+				}
+			}
+		}
+	}
 	int status;
 	int deadChildPid = waitpid(0, &status, WNOHANG);
 	if (deadChildPid > 0)
@@ -45,20 +68,7 @@ void Manager::handleCgiWork(size_t index)
 		std::cout << "Child with pid " << deadChildPid << " is dead" << std::endl;
 		for (int k = 0; k < pids.size(); k++)
 		{
-			if (time(NULL) - fdsTimestamps[index] > RESPONSE_TIMEOUT)
-			{
-				for (int j = 0; j < serverIndex.size(); j++)
-				{
-					if (serverIndex.at(j).first == fds[index].fd)
-					{
-						handleTimeout(index, k);
-						if (k == 0)
-							break;
-						k--;
-					}
-				}
-			}
-			else if (deadChildPid == pids.at(k).first)
+			if (deadChildPid == pids.at(k).first)
 			{
 				for (int j = 0; j < serverIndex.size(); j++)
 				{

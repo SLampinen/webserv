@@ -192,6 +192,11 @@ std::string Server::makeStatus4xx(int status)
 	if (status == 404)
 		return " Not Found";
 	
+	if (status == 408)
+	{
+		return " Connection timeout";
+	}
+	
 	if (status == 413)
 		return " Request Entity Too Large";
 
@@ -236,6 +241,7 @@ std::string Server::makeHeader(int responseStatus, int responseSize)
 	header = headerStream.str();
 	if (header.find("ERROR") != std::string::npos)
 	{
+		std::cout << "Created ERROR, this is bad" << std::endl;
 		return "ERROR";
 	}
 	return header;
