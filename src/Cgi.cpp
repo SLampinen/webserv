@@ -10,7 +10,7 @@ void Manager::handleTimeout(size_t index, int k)
 	std::cout << "NOW resp = " << response << std::endl;
 	response.append(body);
 	std::cout << "AFTER resp = " << response << std::endl;
-	send(fds[index].fd, response.c_str(), response.length(), 0);
+	std::cout << "Send return = " << send(fds[index].fd, response.c_str(), response.length(), 0) << std::endl;
 	cgiOnGoing[index] = 0;
 	std::cout << "Killed at timeout" << std::endl;
 	kill(pids.at(k).first, 9);
@@ -19,6 +19,7 @@ void Manager::handleTimeout(size_t index, int k)
 	fullName.append("temp");
 	fullName.append(std::to_string(index));
 	unlink(fullName.c_str());
+	exit ;
 }
 
 // Work done handling

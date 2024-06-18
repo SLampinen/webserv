@@ -21,22 +21,13 @@ void Manager::handleClientCommunication(size_t index)
 	int bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 	if (bytesReceived < 0)
 	{
-		// Is this legal? or is this checking errno immediatly after read operation?
-		if (errno == EWOULDBLOCK || errno == EAGAIN)
-		{
-			// No data available to read
-			return;
-		}
-		else
-		{
-			std::cerr << "Recv error: " << strerror(errno) << std::endl;
-			close(fds[index].fd);
-			fds.erase(fds.begin() + index);
-			fdsTimestamps.erase(fdsTimestamps.begin() + index);
-			cgiOnGoing.erase(cgiOnGoing.begin() + index);
-			index--; // Adjust index after erasing
-			return;
-		}
+		std::cerr << "Recv error: " << strerror(errno) << std::endl;
+		close(fds[index].fd);
+		fds.erase(fds.begin() + index);
+		fdsTimestamps.erase(fdsTimestamps.begin() + index);
+		cgiOnGoing.erase(cgiOnGoing.begin() + index);
+		index--; // Adjust index after erasing
+		return;
 	}
 	else if (bytesReceived == 0)
 	{

@@ -3,4 +3,6 @@
 <body>This is coming from php file\n
 </body>
 </form>"; ?>
-<?php sleep(5); ?>
+<?php while (1):
+    sleep(3);
+endwhile; ?>

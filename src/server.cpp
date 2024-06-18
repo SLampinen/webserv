@@ -236,9 +236,11 @@ std::string Server::makeHeader(int responseStatus, int responseSize)
 	else if (responseStatus >= 500 && responseStatus <= 599)
 		headerStream << makeStatus5xx(responseStatus) << "\r\n";
 
+	//not used right now, will be used once config parser gets updated
 	std::stringstream newStream;
 	newStream << makeStatus(responseStatus) << "\r\n";
 	std::cout << "DEBUG: " << newStream.str() << std::endl;
+	//end of future/debug
 
 	headerStream << "Content-Length: " << responseSize << "\r\n\r\n";
 	header = headerStream.str();
@@ -302,6 +304,7 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 			struct dirent *pDirent;
 			std::stringstream bufferStream;
 			pDirent = readdir(dir);
+			bufferStream << "The directory contains files: \n";
 			while (pDirent != NULL)
 			{
 				bufferStream << pDirent->d_name << std::endl;
@@ -309,7 +312,6 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 				pDirent = readdir(dir);
 			}
 			closedir(dir);
-			header = "The directory contains files: \n";
 			header = makeHeader(200, bufferStream.str().size());
 			response.append(header);
 			response.append(bufferStream.str());

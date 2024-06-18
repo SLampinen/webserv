@@ -286,7 +286,7 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	end  = receivedData.find(boundary, start);
 	end = receivedData.find_last_of("\r\n", end);
 
-	std::string fileContent = receivedData.substr(start, end - start - 2);
+	std::string fileContent = receivedData.substr(start, end - start - 1);
 	theFile << fileContent;
 	theFile.close();
 	
