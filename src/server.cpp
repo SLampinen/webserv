@@ -8,6 +8,7 @@ Server::Server()
 	this->cgiPath = "";
 	this->client_max_body_size = 0;
 	this->numOfPorts = 0;
+	this->directoryIndex = true;
 }
 
 Server::~Server()
@@ -27,6 +28,7 @@ Server::Server(const Server &var)
 	this->numOfPorts = var.numOfPorts;
 	this->ports = var.ports;
 	this->listeners = var.listeners;
+	this->directoryIndex = var.directoryIndex;
 }
 
 Server &Server::operator=(const Server &var)
@@ -43,6 +45,7 @@ Server &Server::operator=(const Server &var)
 		this->numOfPorts = var.numOfPorts;
 		this->ports = var.ports;
 		this->listeners = var.listeners;
+		this->directoryIndex = var.directoryIndex;
 	}
 	return (*this);
 }
@@ -235,7 +238,7 @@ std::string Server::makeHeader(int responseStatus, int responseSize)
 
 	std::stringstream newStream;
 	newStream << makeStatus(responseStatus) << "\r\n";
-	std::cout << newStream.str() << std::endl;
+	std::cout << "DEBUG: " << newStream.str() << std::endl;
 
 	headerStream << "Content-Length: " << responseSize << "\r\n\r\n";
 	header = headerStream.str();
@@ -255,7 +258,6 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	std::cout << "file name = " << fileName << std::endl;
 	std::string header;
 	std::string buffer;
-	std::stringstream headerStream;
 	std::stringstream responseStream;
 
 
@@ -286,12 +288,33 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	DIR *dir = opendir(possibleDir.c_str());
 	if (dir != NULL)
 	{
-		closedir(dir);
-		buffer = "You are trying to access a directory, not file.\nThis is not allowed";
-		header = makeHeader(403, buffer.size());
-		response.append(header);
-		response.append(buffer);
-		return response;
+		if (directoryIndex == false)
+		{
+			closedir(dir);
+			buffer = "You are trying to access a directory, not file.\nThis is not allowed";
+			header = makeHeader(403, buffer.size());
+			response.append(header);
+			response.append(buffer);
+			return response;
+		}
+		else
+		{
+			struct dirent *pDirent;
+			std::stringstream bufferStream;
+			pDirent = readdir(dir);
+			while (pDirent != NULL)
+			{
+				bufferStream << pDirent->d_name << std::endl;
+				std::cout << pDirent->d_name << std::endl;
+				pDirent = readdir(dir);
+			}
+			closedir(dir);
+			header = "The directory contains files: \n";
+			header = makeHeader(200, bufferStream.str().size());
+			response.append(header);
+			response.append(bufferStream.str());
+			return response;
+		}
 	}
 
 	// if some other page

@@ -19,6 +19,7 @@ private:
 	std::string cgiExt;
 	std::string cgiPath;
 	int client_max_body_size;
+	bool directoryIndex;
 public:
 	Server();
 	~Server();
