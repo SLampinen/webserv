@@ -147,18 +147,27 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 		}
 	}
 
-	std::string path;
-	int start = receivedData.find("/") + 1;
-	int end = receivedData.find(" ", start);
-	path = receivedData.substr(start, end - start);
-	start = receivedData.find("boundary=") + 9;
-	end = receivedData.find_first_not_of("-0123456789", start);
-	std::string boundary = receivedData.substr(start, end - start);
-	end = receivedData.find(boundary, end);
-	std::string rawData = receivedData.substr(end);
-	if (path.compare("upload") == 0)
+	if (receivedData.find("boundary") != std::string::npos)
 	{
-		handleUpload(rawData, boundary, fds, i);
+		std::string path;
+		int start = receivedData.find("/") + 1;
+		int end = receivedData.find(" ", start);
+		path = receivedData.substr(start, end - start);
+		start = receivedData.find("boundary=") + 9;
+		end = receivedData.find_first_of("\r\n ", start);
+		std::string boundary = receivedData.substr(start, end - start);
+		end = receivedData.find(boundary, end);
+		std::cerr << "Boundary = " << boundary << std::endl;
+		std::cerr << receivedData << std::endl;
+		// helps at not crashing when input is chunked
+		if (end == std::string::npos)
+			end = 0;
+			
+		std::string rawData = receivedData.substr(end);
+		if (path.compare("upload") == 0)
+		{
+			handleUpload(rawData, boundary, fds, i);
+		}
 	}
 	else
 	{
@@ -168,8 +177,8 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 	std::getline(file, buffer, '\0');
 	std::stringstream headerStream;
 	headerStream << "HTTP/1.1 200 OK\r\n"
-				 << "Content-Length: " << buffer.size() << "\r\n"
-				 << "\r\n";
+				<< "Content-Length: " << buffer.size() << "\r\n"
+				<< "\r\n";
 	std::string header = headerStream.str();
 	response.append(header);
 	response.append(buffer);
@@ -242,6 +251,16 @@ void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> f
 			break;
 	}
 
+	// for (size_t j = 0; j < boundaries.size(); j++)
+	// {
+	// 	if (receivedData.find(boundaries.at(j)) == 0)
+	// 	{
+	// 		std::cout << "MATCH" << std::endl;
+	// 		handleUpload(receivedData, boundaries.at(j), fds, i);
+	// 		return ;
+	// 	}
+	// }
+	
 	std::string body = "Method Not Implemented";
 	response = serverList.at(serverIndex.at(index).second).makeHeader(501, body.size());
 	response.append(body);
@@ -257,7 +276,7 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 			break;
 	}
 	
-	std::cout << "This is the data we got: " << receivedData << std::endl;
+	// std::cout << "This is the data we got: " << receivedData << std::endl;
 	int start = receivedData.find("filename=") + 10;
 	int end = receivedData.find("\"", start);
 	std::string name = receivedData.substr(start, end - start);
@@ -268,6 +287,7 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	std::string root = serverList.at(serverIndex.at(index).second).getRootDir().append("files/");
 	name = root.append(name);
 	std::cout << "name = " << name << std::endl;
+
 	theFile.open(name);
 	if (theFile.is_open() == 0)
 	{
@@ -285,8 +305,11 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	start = receivedData.find_first_not_of("\r\n", start);
 	end  = receivedData.find(boundary, start);
 	end = receivedData.find_last_of("\r\n", end);
+	if (end == std::string::npos)
+		std::cerr << "ERRORED" << std::endl;
 
 	std::string fileContent = receivedData.substr(start, end - start - 1);
+	std::cerr << "THE constent : " << std::endl << fileContent << std::endl;
 	theFile << fileContent;
 	theFile.close();
 	

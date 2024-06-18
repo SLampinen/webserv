@@ -2,10 +2,16 @@
 
 Manager::Manager()
 {
+	std::string f = "FIRST";
+	std::string g = "Second";
+	this->boundaries.push_back(std::make_pair(f, g));
+	f  = "TEST";
+	this->boundaries.push_back(std::make_pair(f, g));
 }
 
 Manager::~Manager()
 {
+
 }
 
 Manager::Manager(const Manager &var)
@@ -16,6 +22,8 @@ Manager::Manager(const Manager &var)
 	this->fds = var.fds;
 	this->cgiOnGoing = var.cgiOnGoing;
 	this->fdsTimestamps = var.fdsTimestamps;
+
+	this->boundaries = var.boundaries;
 }
 
 Manager &Manager::operator=(const Manager &var)
@@ -28,6 +36,8 @@ Manager &Manager::operator=(const Manager &var)
 		this->fds = var.fds;
 		this->cgiOnGoing = var.cgiOnGoing;
 		this->fdsTimestamps = var.fdsTimestamps;
+	
+		this->boundaries = var.boundaries;
 	}
 	return (*this);
 }
@@ -96,7 +106,12 @@ void Manager::run(std::string configFile)
 			  << "number of servers = " << serverList.size() << std::endl;
 
 	setupPollingforServers();
-
+	
+	for (size_t i = 0; i < boundaries.size(); i++)
+	{
+		std::cout << boundaries.at(i).first << " and " << boundaries.at(i).second << std::endl;
+	}
+	
 	while (true)
 	{
 		handlePolling();
