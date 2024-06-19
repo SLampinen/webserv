@@ -14,6 +14,16 @@ void Manager::closeInactiveConnections(size_t index)
 	}
 }
 
+// ----------- file upload --------
+
+struct FileTransferState
+{
+	std::unique_ptr<std::ofstream> file;
+	bool transferInProgress;
+};
+
+std::map<int, FileTransferState> clientStates;
+
 // Client communication
 void Manager::handleClientCommunication(size_t index)
 {
@@ -64,26 +74,36 @@ void Manager::handleClientCommunication(size_t index)
 				pids.erase(pids.begin() + k);
 			}
 		}
-
-		if (receivedData.find("GET") != std::string::npos)
+		if (!clientStates[fds[index].fd].transferInProgress)
 		{
-			std::cout << "GETTING" << std::endl;
-			handleGet(receivedData, fds, index);
-		}
-		else if (receivedData.find("POST") != std::string::npos)
-		{
-			std::cout << "POSTING" << std::endl;
-			handlePost(receivedData, fds, index);
-		}
-		else if (receivedData.find("DELETE") != std::string::npos)
-		{
-			std::cout << "DELETING" << std::endl;
-			handleDelete(receivedData, fds, index);
+			if (receivedData.find("GET") != std::string::npos)
+			{
+				std::cout << "GETTING" << std::endl;
+				handleGet(receivedData, fds, index);
+			}
+			else if (receivedData.find("POST") != std::string::npos)
+			{
+				std::cout << "POSTING" << std::endl;
+				handlePost(receivedData, fds, index);
+			}
+			else if (receivedData.find("DELETE") != std::string::npos)
+			{
+				std::cout << "DELETING" << std::endl;
+				handleDelete(receivedData, fds, index);
+			}
+			else
+			{
+				std::cout << "OTHER METHOD" << std::endl;
+				handleOther(receivedData, fds, index);
+			}
+			clientStates[fds[index].fd].transferInProgress = true;
 		}
 		else
 		{
-			std::cout << "OTHER METHOD" << std::endl;
-			handleOther(receivedData, fds, index);
+			//continue receiving file
+			handleChunk();
+			// check if file is copmlete, then set tranferinprogress to false.
 		}
+		// start timer for timeout
 	}
 }

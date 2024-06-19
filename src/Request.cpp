@@ -264,6 +264,7 @@ void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> f
 	send(fds[i].fd, response.c_str(), response.length(), 0);
 }
 
+
 // Handle file upload
 void Manager::handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i)
 {
