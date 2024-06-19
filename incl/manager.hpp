@@ -21,6 +21,7 @@ private:
 	std::vector<struct pollfd> fds;
 	std::vector<int> fdsTimestamps;
 	std::vector<int> cgiOnGoing;
+	std::vector<std::string> magic;//Does nothing, but removing it breaks the code
 	std::vector<std::pair<std::string, std::string> > boundaries;
 public:
 	Manager();
