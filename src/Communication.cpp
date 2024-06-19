@@ -16,14 +16,13 @@ void Manager::closeInactiveConnections(size_t index)
 
 // ----------- file upload --------
 
-struct FileTransferState
-{
-	std::unique_ptr<std::ofstream> file;
-	bool transferInProgress;
-};
+// struct FileTransferState
+// {
+// 	std::unique_ptr<std::ofstream> file;
+// 	bool transferInProgress;
+// };
 
-std::map<int, FileTransferState> clientStates;
-
+// 	std::map<int, FileTransferState> clientStates;
 // Client communication
 void Manager::handleClientCommunication(size_t index)
 {
@@ -74,8 +73,8 @@ void Manager::handleClientCommunication(size_t index)
 				pids.erase(pids.begin() + k);
 			}
 		}
-		if (!clientStates[fds[index].fd].transferInProgress)
-		{
+		// if (!clientStates[fds[index].fd].transferInProgress)
+		// {
 			if (receivedData.find("GET") != std::string::npos)
 			{
 				std::cout << "GETTING" << std::endl;
@@ -96,14 +95,17 @@ void Manager::handleClientCommunication(size_t index)
 				std::cout << "OTHER METHOD" << std::endl;
 				handleOther(receivedData, fds, index);
 			}
-			clientStates[fds[index].fd].transferInProgress = true;
-		}
-		else
-		{
-			//continue receiving file
-			handleChunk();
-			// check if file is copmlete, then set tranferinprogress to false.
-		}
+			// clientStates[fds[index].fd].transferInProgress = true;
+		// }
+		// else
+		// {
+		// 	std::cerr << "continuing" << std::endl;
+		// 	//continue receiving file
+		// 	handleChunk(receivedData, fds, index);
+		// 	// check if file is complete, then set tranferinprogress to false.
+		// 	std::cerr << "time now : " << time(NULL) << " and timestamp : " << fdsTimestamps.at(index) << std::endl;
+
+		// }
 		// start timer for timeout
 	}
 }
