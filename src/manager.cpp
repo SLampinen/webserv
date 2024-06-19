@@ -2,11 +2,7 @@
 
 Manager::Manager()
 {
-	std::string f = "FIRST";
-	std::string g = "Second";
-	this->boundaries.push_back(std::make_pair(f, g));
-	f  = "TEST";
-	this->boundaries.push_back(std::make_pair(f, g));
+
 }
 
 Manager::~Manager()
@@ -107,10 +103,6 @@ void Manager::run(std::string configFile)
 
 	setupPollingforServers();
 	
-	for (size_t i = 0; i < boundaries.size(); i++)
-	{
-		std::cout << boundaries.at(i).first << " and " << boundaries.at(i).second << std::endl;
-	}
 	
 	while (true)
 	{

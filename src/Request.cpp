@@ -158,7 +158,7 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 		std::string boundary = receivedData.substr(start, end - start);
 		end = receivedData.find(boundary, end);
 		std::cerr << "Boundary = " << boundary << std::endl;
-		std::cerr << receivedData << std::endl;
+
 		// helps at not crashing when input is chunked
 		if (end == std::string::npos)
 			end = 0;
@@ -256,7 +256,7 @@ void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> f
 	// 	if (receivedData.find(boundaries.at(j)) == 0)
 	// 	{
 	// 		std::cout << "MATCH" << std::endl;
-	// 		handleUpload(receivedData, boundaries.at(j), fds, i);
+	// 		handleChunk(receivedData, fds, i, j);
 	// 		return ;
 	// 	}
 	// }
@@ -288,6 +288,8 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	name = root.append(name);
 	std::cout << "name = " << name << std::endl;
 
+	boundaries.push_back(std::make_pair(name, boundary));
+
 	theFile.open(name);
 	if (theFile.is_open() == 0)
 	{
@@ -301,7 +303,10 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	}
 
 	start = receivedData.find("Content-Type");
-	start = receivedData.find("\n",start);
+	if (start != std::string::npos)
+		start = receivedData.find("\n",start);
+	else
+		start = receivedData.find("\n");
 	start = receivedData.find_first_not_of("\r\n", start);
 	end  = receivedData.find(boundary, start);
 	end = receivedData.find_last_of("\r\n", end);
@@ -309,7 +314,7 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 		std::cerr << "ERRORED" << std::endl;
 
 	std::string fileContent = receivedData.substr(start, end - start - 1);
-	std::cerr << "THE constent : " << std::endl << fileContent << std::endl;
+	// std::cerr << "THE content : " << std::endl << fileContent << std::endl;
 	theFile << fileContent;
 	theFile.close();
 	
@@ -318,4 +323,39 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	responseStream << "HTTP/1.1 200 OK\r\nContent-Length: 26\r\n\r\nFile uploaded successfully";
 	response = responseStream.str();
 	send(fds[i].fd, response.c_str(), response.length(), 0);
+}
+
+void Manager::handleChunk(std::string receivedDate, std::vector <struct pollfd> fds, int fdsIndex, int boundariesIndex)
+{
+	int index;
+	for (index = 0; index < serverIndex.size(); index++)
+	{
+		if (serverIndex.at(index).first == fds[fdsIndex].fd)
+			break;
+	}
+	std::ofstream theFile;
+	std::string root = serverList.at(serverIndex.at(index).second).getRootDir().append("files/");
+	std::string name = root.append(boundaries.at(boundariesIndex).first);
+	theFile.open(name, std::ofstream::app);
+	if (theFile.is_open() == 0)
+	{
+		std::cout << "Is not open" << std::endl;
+		std::string response;
+		std::stringstream responseStream;
+		responseStream << "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 38\r\n\r\nUploading failed due to unknown reason";
+		response = responseStream.str();
+		send(fds[fdsIndex].fd, response.c_str(), response.length(), 0);
+		return ;
+	}
+
+	if (receivedDate.find(boundaries.at(boundariesIndex).second) != std::string::npos)
+	{
+		std::string usefulData = receivedDate.substr(receivedDate.find(boundaries.at(boundariesIndex).second));
+		theFile << usefulData;
+	}
+	else
+	{
+		theFile << receivedDate;
+	}
+	theFile.close();
 }

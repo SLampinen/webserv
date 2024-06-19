@@ -21,7 +21,6 @@ private:
 	std::vector<struct pollfd> fds;
 	std::vector<int> fdsTimestamps;
 	std::vector<int> cgiOnGoing;
-	// std::vector<std::string> boundaries;
 	std::vector<std::pair<std::string, std::string> > boundaries;
 public:
 	Manager();
@@ -59,6 +58,7 @@ public:
 	void handleCGI(std::string receivedData, std::vector <struct pollfd> fds, int i);
 
 	void handleUpload(std::string receivedData, std::string boundary, std::vector <struct pollfd> fds, int i);
+	void handleChunk(std::string receivedDate, std::vector <struct pollfd> fds, int fdsIndex, int boundariesIndex);
 };
 
 #endif
