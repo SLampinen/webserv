@@ -21,7 +21,7 @@ void Manager::setupPollingforServers()
 // Poll event handling
 void Manager::handlePollEvent(size_t index)
 {
-	if (fds[index].revents & POLLIN | POLLOUT)
+	if (fds[index].revents & POLLIN )
 	{
 		bool newConnection = acceptNewConnections(index);
 		// Iterate over each server and its listeners to find the matching serverFd

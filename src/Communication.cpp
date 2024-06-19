@@ -74,36 +74,30 @@ void Manager::handleClientCommunication(size_t index)
 				pids.erase(pids.begin() + k);
 			}
 		}
-		if (!clientStates[fds[index].fd].transferInProgress)
+
+		if (receivedData.find("GET") != std::string::npos)
 		{
-			if (receivedData.find("GET") != std::string::npos)
-			{
-				std::cout << "GETTING" << std::endl;
-				handleGet(receivedData, fds, index);
-			}
-			else if (receivedData.find("POST") != std::string::npos)
-			{
-				std::cout << "POSTING" << std::endl;
-				handlePost(receivedData, fds, index);
-			}
-			else if (receivedData.find("DELETE") != std::string::npos)
-			{
-				std::cout << "DELETING" << std::endl;
-				handleDelete(receivedData, fds, index);
-			}
-			else
-			{
-				std::cout << "OTHER METHOD" << std::endl;
-				handleOther(receivedData, fds, index);
-			}
-			clientStates[fds[index].fd].transferInProgress = true;
+			std::cout << "GETTING" << std::endl;
+			handleGet(receivedData, fds, index);
+		}
+		else if (receivedData.find("POST") != std::string::npos)
+		{
+			std::cout << "POSTING" << std::endl;
+			handlePost(receivedData, fds, index);
+		}
+		else if (receivedData.find("DELETE") != std::string::npos)
+		{
+			std::cout << "DELETING" << std::endl;
+			handleDelete(receivedData, fds, index);
 		}
 		else
 		{
-			//continue receiving file
-			handleChunk();
-			// check if file is copmlete, then set tranferinprogress to false.
+			std::cout << "OTHER METHOD" << std::endl;
+			handleOther(receivedData, fds, index);
 		}
+		clientStates[fds[index].fd].transferInProgress = true;
+	
+
 		// start timer for timeout
 	}
 }
