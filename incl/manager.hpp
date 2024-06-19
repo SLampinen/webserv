@@ -6,12 +6,20 @@
 
 // Connection timeout must be greater than response timeout
 // lest great horrors emerge
+#define REQUEST_TIMEOUT 3
 #define RESPONSE_TIMEOUT 60
 #define CONNECTION_TIMEOUT 120
 
 class Manager
 {
 private:
+
+	// struct FileTransferState
+	// {
+	// 	std::unique_ptr<std::ofstream> file;
+	// 	bool transferInProgress;
+	// };
+	// std::map<int, FileTransferState> clientStates;
 	std::vector<Server> serverList;
 	std::vector<std::pair<int, int>> serverIndex;
 
@@ -59,6 +67,8 @@ public:
 
 	void handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i);
 	void handleChunk(std::string receivedDate, std::vector<struct pollfd> fds, int fdsIndex, int boundariesIndex);
+	void handleContinue(int fdsIndex);
+	void handleTimeout(int fdsIndex);
 };
 
 #endif

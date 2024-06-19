@@ -66,6 +66,7 @@
 		"utility": "cpp",
 		"__tree": "cpp",
 		"map": "cpp",
-		"filesystem": "cpp"
+		"filesystem": "cpp",
+		"*.tcc": "cpp"
 	}
 }

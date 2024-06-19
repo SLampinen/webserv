@@ -373,3 +373,78 @@ void Manager::handleChunk(std::string receivedData, std::vector<struct pollfd> f
 	}
 	theFile.close();
 }
+
+void Manager::handleContinue(int fdsIndex)
+{
+	char buffer[1024];
+	int bytesReceived = recv(fds[fdsIndex].fd, buffer, sizeof(buffer), 0);
+	std::string receivedData(buffer, bytesReceived);
+	if (bytesReceived == 0)
+	{
+		int index;
+		for (index = 0; index < serverIndex.size(); index++)
+		{
+			if (serverIndex.at(index).first == fds[fdsIndex].fd)
+			{
+				break;
+			}
+		}
+		std::string body = "File uploaded successfully";
+		std::string response = serverList.at(serverIndex.at(index).second).makeHeader(200, body.size());
+		send(fds[fdsIndex].fd, response.c_str(), response.length(), 0);
+		// clientStates[fds[fdsIndex].fd].transferInProgress = false;
+		return ;
+	}
+	
+	bytesReceived = recv(fds[fdsIndex].fd, buffer, sizeof(buffer), 0);
+	while (bytesReceived > 0)
+	{
+		std::string rest(buffer, bytesReceived);
+		receivedData.append(rest);
+		bytesReceived = recv(fds[fdsIndex].fd, buffer, sizeof(buffer), 0);
+	}
+	if (receivedData.find(boundaries.at(fdsIndex).second) != std::string::npos)
+	{
+		receivedData = receivedData.substr(0, receivedData.find(boundaries.at(fdsIndex).second));
+	}
+	std::string name = boundaries.at(fdsIndex).first;
+	std::ofstream theFile;
+	theFile.open(name, std::ofstream::app);
+	theFile << receivedData;
+	theFile.close();
+}
+
+void Manager::handleTimeout(int fdsIndex)
+{
+	char buffer[1024];
+	int bytesReceived = recv(fds[fdsIndex].fd, buffer, sizeof(buffer), 0);
+	std::string receivedData(buffer, bytesReceived);
+	bytesReceived = recv(fds[fdsIndex].fd, buffer, sizeof(buffer), 0);
+	while (bytesReceived > 0)
+	{
+		std::string rest(buffer, bytesReceived);
+		receivedData.append(rest);
+		bytesReceived = recv(fds[fdsIndex].fd, buffer, sizeof(buffer), 0);
+	}
+	if (receivedData.find(boundaries.at(fdsIndex).second) != std::string::npos)
+	{
+		receivedData = receivedData.substr(0, receivedData.find(boundaries.at(fdsIndex).second));
+	}
+	std::string name = boundaries.at(fdsIndex).first;
+	std::ofstream theFile;
+	theFile.open(name, std::ofstream::app);
+	theFile << receivedData;
+	theFile.close();
+	int index;
+	for (index = 0; index < serverIndex.size(); index++)
+	{
+		if (serverIndex.at(index).first == fds[fdsIndex].fd)
+		{
+			break;
+		}
+	}
+	std::string body = "File uploaded successfully";
+	std::string response = serverList.at(serverIndex.at(index).second).makeHeader(200, body.size());
+	send(fds[fdsIndex].fd, response.c_str(), response.length(), 0);
+	// clientStates[fds[fdsIndex].fd].transferInProgress = false;
+}

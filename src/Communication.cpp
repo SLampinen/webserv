@@ -74,7 +74,8 @@ void Manager::handleClientCommunication(size_t index)
 			}
 		}
 		// if (!clientStates[fds[index].fd].transferInProgress)
-		// {
+		{
+			// clientStates[fds[index].fd].transferInProgress = true;
 			if (receivedData.find("GET") != std::string::npos)
 			{
 				std::cout << "GETTING" << std::endl;
@@ -95,17 +96,17 @@ void Manager::handleClientCommunication(size_t index)
 				std::cout << "OTHER METHOD" << std::endl;
 				handleOther(receivedData, fds, index);
 			}
-			// clientStates[fds[index].fd].transferInProgress = true;
-		// }
+		}
 		// else
 		// {
-		// 	std::cerr << "continuing" << std::endl;
-		// 	//continue receiving file
-		// 	handleChunk(receivedData, fds, index);
-		// 	// check if file is complete, then set tranferinprogress to false.
+		// 	handleContinue(index);
+		// 	// 	// check if file is complete, then set tranferinprogress to false.
 		// 	std::cerr << "time now : " << time(NULL) << " and timestamp : " << fdsTimestamps.at(index) << std::endl;
-
+		// 	if (fdsTimestamps[index] - time(NULL) > REQUEST_TIMEOUT)
+		// 	{
+		// 		handleTimeout(index);
+		// 	}
 		// }
-		// start timer for timeout
+		
 	}
 }
