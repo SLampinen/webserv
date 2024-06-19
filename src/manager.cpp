@@ -2,7 +2,7 @@
 
 Manager::Manager()
 {
-
+	std::cerr << "----------" << std::endl << "Boundaries size : " << boundaries.size() << std::endl << "----------" << std::endl;
 }
 
 Manager::~Manager()
@@ -93,6 +93,8 @@ bool Manager::acceptNewConnections(size_t index)
 // Run
 void Manager::run(std::string configFile)
 {
+	std::cerr << "----------" << std::endl << "Boundaries size : " << boundaries.size() << std::endl << "----------" << std::endl;
+	std::cerr << "Timestamps size : " << fdsTimestamps.size() << std::endl;
 	if (readConfig(configFile) == 0)
 	{
 		std::cerr << "ERROR reading config file" << std::endl;

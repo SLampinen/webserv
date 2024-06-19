@@ -244,6 +244,7 @@ void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> f
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
 		{
+			// std::cout << receivedData << std::endl;
 			serverList.at(serverIndex.at(j).second).log(receivedData);
 			break;
 		}
@@ -328,7 +329,7 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 }
 
 // Handle chunked file upload
-void Manager::handleChunk(std::string receivedDate, std::vector<struct pollfd> fds, int fdsIndex, int boundariesIndex)
+void Manager::handleChunk(std::string receivedData, std::vector<struct pollfd> fds, int fdsIndex, int boundariesIndex)
 {
 	int index;
 	for (index = 0; index < serverIndex.size(); index++)
@@ -337,8 +338,8 @@ void Manager::handleChunk(std::string receivedDate, std::vector<struct pollfd> f
 			break;
 	}
 	std::ofstream theFile;
-	std::string root = serverList.at(serverIndex.at(index).second).getRootDir().append("files/");
-	std::string name = root.append(boundaries.at(boundariesIndex).first);
+	std::string name = boundaries.at(boundariesIndex).first;
+	std::cout << "name = " << name << std::endl;
 	theFile.open(name, std::ofstream::app);
 	if (!theFile.is_open())
 	{
@@ -353,14 +354,22 @@ void Manager::handleChunk(std::string receivedDate, std::vector<struct pollfd> f
 	}
 
 	// Append the received data to the file
-	if (receivedDate.find(boundaries.at(boundariesIndex).second) != std::string::npos)
+	if (receivedData.find(boundaries.at(boundariesIndex).second) != std::string::npos)
 	{
-		std::string usefulData = receivedDate.substr(receivedDate.find(boundaries.at(boundariesIndex).second));
+		std::cout << "Boundary found, and is :" << std::endl;
+		std::cout << boundaries.at(boundariesIndex).second << std::endl;
+		int end = receivedData.find(boundaries.at(boundariesIndex).second) - 1;
+		int newEnd = receivedData.find_last_not_of("\r\n-", end - 1);
+		std::cout << end << " and " << newEnd << std::endl;
+		std::cout << "The char = " << receivedData.at(newEnd) << std::endl;
+		std::string usefulData = receivedData.substr(0, end);
+		// std::cerr << usefulData << std::endl;
 		theFile << usefulData;
 	}
 	else
 	{
-		theFile << receivedDate;
+		std::cout << "Boundary not found" << std::endl;
+		theFile << receivedData;
 	}
 	theFile.close();
 }
