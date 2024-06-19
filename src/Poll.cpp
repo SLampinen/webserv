@@ -10,7 +10,7 @@ void Manager::setupPollingforServers()
 		{
 			struct pollfd pfd;
 			pfd.fd = serverList.at(i).listeners.at(j).getServerFd();
-			pfd.events = POLLIN;
+			pfd.events = POLLIN | POLLOUT;
 			fds.push_back(pfd);
 			fdsTimestamps.push_back(2147483647);
 			cgiOnGoing.push_back(0);
@@ -21,7 +21,7 @@ void Manager::setupPollingforServers()
 // Poll event handling
 void Manager::handlePollEvent(size_t index)
 {
-	if (fds[index].revents & POLLIN)
+	if (fds[index].revents & POLLIN | POLLOUT)
 	{
 		bool newConnection = acceptNewConnections(index);
 		// Iterate over each server and its listeners to find the matching serverFd
