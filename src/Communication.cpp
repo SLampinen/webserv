@@ -20,6 +20,8 @@ struct FileTransferState
 {
 	std::unique_ptr<std::ofstream> file;
 	bool transferInProgress;
+
+	FileTransferState() : transferInProgress(false) {}
 };
 
 std::map<int, FileTransferState> clientStates;
@@ -75,29 +77,57 @@ void Manager::handleClientCommunication(size_t index)
 			}
 		}
 
-		if (receivedData.find("GET") != std::string::npos)
+		if (!clientStates[fds[index].fd].transferInProgress)
 		{
-			std::cout << "GETTING" << std::endl;
-			handleGet(receivedData, fds, index);
-		}
-		else if (receivedData.find("POST") != std::string::npos)
-		{
-			std::cout << "POSTING" << std::endl;
-			handlePost(receivedData, fds, index);
-		}
-		else if (receivedData.find("DELETE") != std::string::npos)
-		{
-			std::cout << "DELETING" << std::endl;
-			handleDelete(receivedData, fds, index);
+			printf("--inside find GET etc.--\n");
+			if (receivedData.find("GET") != std::string::npos)
+			{
+				std::cout << "GETTING" << std::endl;
+				handleGet(receivedData, fds, index);
+			}
+			else if (receivedData.find("POST") != std::string::npos)
+			{
+				std::cout << "POSTING" << std::endl;
+				handlePost(receivedData, fds, index);
+			}
+			else if (receivedData.find("DELETE") != std::string::npos)
+			{
+				std::cout << "DELETING" << std::endl;
+				handleDelete(receivedData, fds, index);
+			}
+			else
+			{
+				std::cout << "OTHER METHOD" << std::endl;
+				handleOther(receivedData, fds, index);
+			}
+			if (!isLastChunk(receivedData))
+				clientStates[fds[index].fd].transferInProgress = true;
 		}
 		else
 		{
-			std::cout << "OTHER METHOD" << std::endl;
-			handleOther(receivedData, fds, index);
-		}
-		clientStates[fds[index].fd].transferInProgress = true;
-	
+			// continue receiving file
+			printf("--inside continue receiving file--\n");
+			while (bytesReceived > 0 && !isLastChunk(receivedData))
+			{
+				*(clientStates[fds[index].fd].file) << receivedData;
+				bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
+				receivedData.append(buffer, bytesReceived);
+			}
 
+			if (isLastChunk(receivedData))
+			{
+				// File transfer complete
+				clientStates[fds[index].fd].transferInProgress = false;
+			}
+		}
 		// start timer for timeout
 	}
+}
+
+bool Manager::isLastChunk(const std::string &data)
+{
+	printf("--inside isLastChunk--\n");
+	// This is a simplified check and might not work with all HTTP servers and clients.
+	// A more robust implementation would parse the chunk sizes and the HTTP headers.
+	return data.find("\r\n0\r\n\r\n") != std::string::npos;
 }

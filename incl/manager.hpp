@@ -59,6 +59,7 @@ public:
 
 	void handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i);
 
+	bool isLastChunk(const std::string& data);
 };
 
 #endif
