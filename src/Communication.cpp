@@ -64,7 +64,7 @@ void Manager::handleClientCommunication(size_t index)
 			}
 		}
 		// if (!clientStates[fds[index].fd].transferInProgress)
-		{
+		// {
 			// clientStates[fds[index].fd].transferInProgress = true;
 			if (receivedData.find("GET") != std::string::npos)
 			{
@@ -93,7 +93,7 @@ void Manager::handleClientCommunication(size_t index)
 				std::cout << "HANDLING CONTINUE" << std::endl;
 				handleContinue(receivedData, index);
 			}
-		}
+		// }
 		// else
 		// {
 		// 	handleContinue(index);
