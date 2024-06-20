@@ -330,13 +330,13 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
     {
         std::cout << "Boundary found, this is the end of firefox content" << std::endl;
         end = receivedData.find_last_of("\r\n", end) - 1;
-    }
-
-	// Extract the file content and write it to the file
-    std::cout << "start = " << start << " and end = " << end << std::endl;
-    if (end > start)
-    {
         std::string fileContent = receivedData.substr(start, end - start);
+            if (end > start)
+        theFile << fileContent;
+    }
+    else
+    {
+        std::string fileContent = receivedData.substr(start);
         theFile << fileContent;
     }
 	theFile.close();
