@@ -14,16 +14,6 @@ void Manager::closeInactiveConnections(size_t index)
 	}
 }
 
-// ----------- file upload --------
-
-// struct FileTransferState
-// {
-// 	std::unique_ptr<std::ofstream> file;
-// 	bool transferInProgress;
-// };
-
-// 	std::map<int, FileTransferState> clientStates;
-// Client communication
 void Manager::handleClientCommunication(size_t index)
 {
 	char buffer[1024];
@@ -91,10 +81,17 @@ void Manager::handleClientCommunication(size_t index)
 				std::cout << "DELETING" << std::endl;
 				handleDelete(receivedData, fds, index);
 			}
-			else
+			else if (receivedData.find("HEAD") != std::string::npos || receivedData.find("PUT") != std::string::npos ||
+			receivedData.find("CONNECT") != std::string::npos || receivedData.find("OPTIONS") != std::string::npos ||
+			receivedData.find("TRACE") != std::string::npos || receivedData.find("PATCH") != std::string::npos)
 			{
 				std::cout << "OTHER METHOD" << std::endl;
 				handleOther(receivedData, fds, index);
+			}
+			else
+			{
+				std::cout << "HANDLING CONTINUE" << std::endl;
+				handleContinue(receivedData, index);
 			}
 		}
 		// else

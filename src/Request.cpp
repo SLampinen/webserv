@@ -269,6 +269,8 @@ void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> f
 // Handle file upload
 void Manager::handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i)
 {
+	std::cout << "UPLOADING" << std::endl;
+	std::cout << "i = " << i << std::endl;
 	int index;
 	for (index = 0; index < serverIndex.size(); index++)
 	{
@@ -286,6 +288,16 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	std::ofstream theFile;
 	std::string root = serverList.at(serverIndex.at(index).second).getRootDir().append("files/");
 	name = root.append(name);
+	for (size_t tbd = 0; tbd < fdsFileNames.size(); tbd++)
+	{
+		if (fdsFileNames.at(tbd).first == i)
+		{
+			fdsFileNames.erase(fdsFileNames.begin() + i);
+			break;
+		}
+	}
+	
+	fdsFileNames.push_back(std::make_pair(i, name));
 	std::cout << "name = " << name << std::endl;
 
 	boundaries.push_back(std::make_pair(name, boundary));
@@ -311,12 +323,12 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 		start = receivedData.find("\n");
 	start = receivedData.find_first_not_of("\r\n", start);
 	end = receivedData.find(boundary, start);
-	end = receivedData.find_last_of("\r\n", end);
+	// end = receivedData.find_last_of("\r\n", end);
 	if (end == std::string::npos)
 		std::cerr << "ERRORED" << std::endl;
 
 	// Extract the file content and write it to the file
-	std::string fileContent = receivedData.substr(start, end - start - 1);
+	std::string fileContent = receivedData.substr(start, end - start);
 	theFile << fileContent;
 	theFile.close();
 
@@ -374,44 +386,60 @@ void Manager::handleChunk(std::string receivedData, std::vector<struct pollfd> f
 	theFile.close();
 }
 
-void Manager::handleContinue(int fdsIndex)
+void Manager::handleContinue(std::string receivedData, int fdsIndex)
 {
-	char buffer[1024];
-	int bytesReceived = recv(fds[fdsIndex].fd, buffer, sizeof(buffer), 0);
-	std::string receivedData(buffer, bytesReceived);
-	if (bytesReceived == 0)
+	for (int j = 0; j < serverIndex.size(); j++)
 	{
-		int index;
-		for (index = 0; index < serverIndex.size(); index++)
+		if (serverIndex.at(j).first == fds[fdsIndex].fd)
 		{
-			if (serverIndex.at(index).first == fds[fdsIndex].fd)
+			// std::cout << receivedData << std::endl;
+			serverList.at(serverIndex.at(j).second).log(receivedData);
+			break;
+		}
+	}
+	std::cout << "CONTINUING" << std::endl;
+	int indexB;
+	std::cout << boundaries.at(0).second << std::endl;
+	for (indexB = 0; indexB < boundaries.size(); indexB++)
+	{
+		if (receivedData.find(boundaries.at(indexB).second) != std::string::npos)
+		{
+			receivedData = receivedData.substr(0, receivedData.find(boundaries.at(indexB).second));
+			receivedData = receivedData.substr(0, receivedData.find_last_of(boundaries.at(indexB).second) - 1);
+			break;
+		}
+	}
+	// std::cerr << receivedData << std::endl;
+	std::cout << indexB << " and " << boundaries.size() << std::endl;
+	if (indexB < boundaries.size())
+	{
+		std::cout << "is smaller" << std::endl;
+		std::string name = boundaries.at(indexB).first;
+		std::cout << "name of file = " << name << std::endl;
+		std::ofstream theFile;
+		theFile.open(name, std::ofstream::app);
+		theFile << receivedData;
+		theFile.close();
+	}
+	else
+	{
+		std::cout << "is same" << std::endl;
+		int namesIndex;
+		for (size_t namesIndex = 0; namesIndex < fdsFileNames.size(); namesIndex++)
+		{
+			if (fdsIndex = fdsFileNames.at(namesIndex).first)
 			{
 				break;
 			}
+			
 		}
-		std::string body = "File uploaded successfully";
-		std::string response = serverList.at(serverIndex.at(index).second).makeHeader(200, body.size());
-		send(fds[fdsIndex].fd, response.c_str(), response.length(), 0);
-		// clientStates[fds[fdsIndex].fd].transferInProgress = false;
-		return ;
+		
+		std::cout << "name of file = " << fdsFileNames.at(namesIndex).second << std::endl;
+		std::ofstream theFile;
+		theFile.open(fdsFileNames.at(namesIndex).second, std::ofstream::app);
+		theFile << receivedData;
+		theFile.close();
 	}
-	
-	bytesReceived = recv(fds[fdsIndex].fd, buffer, sizeof(buffer), 0);
-	while (bytesReceived > 0)
-	{
-		std::string rest(buffer, bytesReceived);
-		receivedData.append(rest);
-		bytesReceived = recv(fds[fdsIndex].fd, buffer, sizeof(buffer), 0);
-	}
-	if (receivedData.find(boundaries.at(fdsIndex).second) != std::string::npos)
-	{
-		receivedData = receivedData.substr(0, receivedData.find(boundaries.at(fdsIndex).second));
-	}
-	std::string name = boundaries.at(fdsIndex).first;
-	std::ofstream theFile;
-	theFile.open(name, std::ofstream::app);
-	theFile << receivedData;
-	theFile.close();
 }
 
 void Manager::handleTimeout(int fdsIndex)

@@ -2,7 +2,7 @@
 
 Manager::Manager()
 {
-	std::cerr << "----------" << std::endl << "Boundaries size : " << boundaries.size() << std::endl << "----------" << std::endl;
+	
 }
 
 Manager::~Manager()

@@ -1,6 +1,6 @@
 NAME = server
 
-CC = c++
+CC = g++
 CFLAGS = -Wall -Wextra -Werror -g 
 RM = rm -rf
 

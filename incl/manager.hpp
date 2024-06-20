@@ -30,6 +30,7 @@ private:
 	std::vector<int> cgiOnGoing;
 	std::vector<std::string> magic;//Does nothing, but removing it breaks the code
 	std::vector<std::pair<std::string, std::string> > boundaries;
+	std::vector<std::pair<int, std::string> > fdsFileNames;
 public:
 	Manager();
 	~Manager();
@@ -66,8 +67,8 @@ public:
 	void handleCGI(std::string receivedData, std::vector<struct pollfd> fds, int i);
 
 	void handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i);
-	void handleChunk(std::string receivedDate, std::vector<struct pollfd> fds, int fdsIndex, int boundariesIndex);
-	void handleContinue(int fdsIndex);
+	void handleChunk(std::string receivedData, std::vector<struct pollfd> fds, int fdsIndex, int boundariesIndex);
+	void handleContinue(std::string receivedData, int fdsIndex);
 	void handleTimeout(int fdsIndex);
 };
 
