@@ -2,7 +2,6 @@
 
 listeningSocket::listeningSocket()
 {
-	
 }
 listeningSocket::listeningSocket(int portNum)
 {
@@ -12,7 +11,7 @@ listeningSocket::listeningSocket(int portNum)
 	if ((serverFd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
 	{
 		std::cout << "ERROR, " << strerror(errno) << std::endl;
-		return ;
+		return;
 	}
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
@@ -22,15 +21,15 @@ listeningSocket::listeningSocket(int portNum)
 	const int enable = 1;
 	setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
 
-	if (bind(serverFd, (struct sockaddr*)&address, sizeof(address)) < 0)
+	if (bind(serverFd, (struct sockaddr *)&address, sizeof(address)) < 0)
 	{
 		std::cout << "ERROR, " << strerror(errno) << std::endl;
-		return ;
+		return;
 	}
 	if (listen(serverFd, 10) < 0)
 	{
 		std::cout << "ERROR, " << strerror(errno) << std::endl;
-		return ;
+		return;
 	}
 }
 
@@ -59,7 +58,6 @@ listeningSocket &listeningSocket::operator=(const listeningSocket &var)
 	return (*this);
 }
 
-
 int listeningSocket::getPortNum()
 {
 	return this->port;
@@ -69,7 +67,6 @@ struct sockaddr_in listeningSocket::getAddress()
 {
 	return this->address;
 }
-
 
 int listeningSocket::getServerFd()
 {

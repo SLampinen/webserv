@@ -186,7 +186,7 @@ std::string Server::makeStatus4xx(int status)
 {
 	if (status == 400)
 		return " Bad Request";
-	
+
 	if (status == 403)
 	{
 		return " Forbidden";
@@ -194,12 +194,12 @@ std::string Server::makeStatus4xx(int status)
 
 	if (status == 404)
 		return " Not Found";
-	
+
 	if (status == 408)
 	{
 		return " Connection timeout";
 	}
-	
+
 	if (status == 413)
 		return " Request Entity Too Large";
 
@@ -236,11 +236,11 @@ std::string Server::makeHeader(int responseStatus, int responseSize)
 	else if (responseStatus >= 500 && responseStatus <= 599)
 		headerStream << makeStatus5xx(responseStatus) << "\r\n";
 
-	//not used right now, will be used once config parser gets updated
+	// not used right now, will be used once config parser gets updated
 	std::stringstream newStream;
 	newStream << makeStatus(responseStatus) << "\r\n";
 	std::cout << "DEBUG: " << newStream.str() << std::endl;
-	//end of future/debug
+	// end of future/debug
 
 	headerStream << "Content-Length: " << responseSize << "\r\n\r\n";
 	header = headerStream.str();
@@ -261,7 +261,6 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	std::string header;
 	std::string buffer;
 	std::stringstream responseStream;
-
 
 	// if empty, aka front page
 	if (fileName.empty())
@@ -404,7 +403,6 @@ int Server::getNumOfPorts(void)
 	return this->numOfPorts;
 }
 
-
 void Server::makeSocketList()
 {
 	for (int i = 0; i < numOfPorts; i++)
@@ -417,5 +415,5 @@ void Server::makeSocketList()
 
 std::string Server::getRootDir()
 {
-	 return this->rootDir;
+	return this->rootDir;
 }

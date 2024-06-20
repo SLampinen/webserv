@@ -2,12 +2,13 @@
 
 Manager::Manager()
 {
-	std::cerr << "----------" << std::endl << "Boundaries size : " << boundaries.size() << std::endl << "----------" << std::endl;
+	std::cerr << "----------" << std::endl
+			  << "Boundaries size : " << boundaries.size() << std::endl
+			  << "----------" << std::endl;
 }
 
 Manager::~Manager()
 {
-
 }
 
 Manager::Manager(const Manager &var)
@@ -32,7 +33,7 @@ Manager &Manager::operator=(const Manager &var)
 		this->fds = var.fds;
 		this->cgiOnGoing = var.cgiOnGoing;
 		this->fdsTimestamps = var.fdsTimestamps;
-	
+
 		this->boundaries = var.boundaries;
 	}
 	return (*this);
@@ -93,7 +94,9 @@ bool Manager::acceptNewConnections(size_t index)
 // Run
 void Manager::run(std::string configFile)
 {
-	std::cerr << "----------" << std::endl << "Boundaries size : " << boundaries.size() << std::endl << "----------" << std::endl;
+	std::cerr << "----------" << std::endl
+			  << "Boundaries size : " << boundaries.size() << std::endl
+			  << "----------" << std::endl;
 	std::cerr << "Timestamps size : " << fdsTimestamps.size() << std::endl;
 	if (readConfig(configFile) == 0)
 	{
@@ -104,8 +107,7 @@ void Manager::run(std::string configFile)
 			  << "number of servers = " << serverList.size() << std::endl;
 
 	setupPollingforServers();
-	
-	
+
 	while (true)
 	{
 		handlePolling();
