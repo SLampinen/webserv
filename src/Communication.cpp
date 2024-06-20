@@ -77,7 +77,20 @@ void Manager::handleClientCommunication(size_t index)
 			}
 		}
 
-		if (!clientStates[fds[index].fd].transferInProgress)
+		// continue receiving file
+		if (clientStates[fds[index].fd].transferInProgress)
+		{
+			printf("--inside continue receiving file--\n");
+			if (!isLastChunk(receivedData))
+			{
+				printf("It's not last chunk\n");
+				clientStates[fds[index].fd]
+					.transferInProgress = true;
+				return;
+			}
+			receivedData.append(buffer, bytesReceived);
+		}
+		else
 		{
 			printf("--inside find GET etc.--\n");
 			if (receivedData.find("GET") != std::string::npos)
@@ -100,34 +113,32 @@ void Manager::handleClientCommunication(size_t index)
 				std::cout << "OTHER METHOD" << std::endl;
 				handleOther(receivedData, fds, index);
 			}
-			if (!isLastChunk(receivedData))
-				clientStates[fds[index].fd].transferInProgress = true;
+			clientStates[fds[index].fd].transferInProgress = true;
 		}
-		else
-		{
-			// continue receiving file
-			printf("--inside continue receiving file--\n");
-			while (bytesReceived > 0 && !isLastChunk(receivedData))
-			{
-				*(clientStates[fds[index].fd].file) << receivedData;
-				bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
-				receivedData.append(buffer, bytesReceived);
-			}
 
-			if (isLastChunk(receivedData))
-			{
-				// File transfer complete
-				clientStates[fds[index].fd].transferInProgress = false;
-			}
+		// continue receiving file
+
+		while (bytesReceived > 0 && !isLastChunk(receivedData))
+		{
+			*(clientStates[fds[index].fd].file) << receivedData;
+			bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
+			receivedData.append(buffer, bytesReceived);
+			printf("in loop\n");
 		}
+
+		if (isLastChunk(receivedData))
+		{
+			printf("in if\n");
+			// File transfer complete
+			clientStates[fds[index].fd].transferInProgress = false;
+		}
+
 		// start timer for timeout
 	}
 }
 
 bool Manager::isLastChunk(const std::string &data)
 {
-	printf("--inside isLastChunk--\n");
-	// This is a simplified check and might not work with all HTTP servers and clients.
-	// A more robust implementation would parse the chunk sizes and the HTTP headers.
+	printf("inside is last chunk\n");
 	return data.find("\r\n0\r\n\r\n") != std::string::npos;
 }
