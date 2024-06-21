@@ -21,5 +21,15 @@
 	<input type="file" id="file" name="file">
 	<button type="submit">Upload</button>
 </form>
+<form id="deleteform" onsubmit="javascript: deleteApp(this.arg.value)">
+	<label>Choose file to delete </label>
+	<input type="text" id="arg" />
+	<button type="submit">Delete</button>
+</form>
+<script>
+function deleteApp(file) {
+  fetch('http://localhost:4245/files/'+file, { method: 'DELETE' });
+}
+</script>
 </body>
 </html>
