@@ -30,7 +30,7 @@ void Manager::handleGet(std::string receivedData, std::vector<struct pollfd> fds
 		fileExt = fileExt.substr(0, end);
 	}
 
-	int index;
+	size_t index;
 
 	// Find the server index
 	for (index = 0; index < serverIndex.size(); index++)
@@ -61,7 +61,6 @@ void Manager::handleGet(std::string receivedData, std::vector<struct pollfd> fds
 
 		if (serverList.at(serverIndex.at(index).second).getClientBodySize() != 0 && serverList.at(serverIndex.at(index).second).getClientBodySize() < response.length())
 		{
-			std::stringstream responseStream;
 			std::cout << "response too large" << std::endl;
 			std::string body = "ERROR 413 Request Entity Too Large";
 			response = serverList.at(serverIndex.at(index).second).makeHeader(413, body.size());
@@ -77,7 +76,7 @@ void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds
 {
 	std::string response;
 	cgiOnGoing[i] = 1;
-	int index;
+	size_t index;
 
 	// Find the server index
 	for (index = 0; index < serverIndex.size(); index++)
@@ -146,7 +145,7 @@ void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds
 // POST
 void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
-	for (int j = 0; j < serverIndex.size(); j++)
+	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
 		{
@@ -158,8 +157,8 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 	if (receivedData.find("boundary") != std::string::npos)
 	{
 		std::string path;
-		int start = receivedData.find("/") + 1;
-		int end = receivedData.find(" ", start);
+		size_t start = receivedData.find("/") + 1;
+		size_t end = receivedData.find(" ", start);
 		path = receivedData.substr(start, end - start);
 		start = receivedData.find("boundary=") + 9;
 		end = receivedData.find_first_of("\r\n ", start);
@@ -197,7 +196,7 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 // DELETE
 void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
-	for (int j = 0; j < serverIndex.size(); j++)
+	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
 		{
@@ -206,15 +205,15 @@ void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> 
 		}
 	}
 	std::string response;
-	int index;
+	size_t index;
 	for (index = 0; index < serverIndex.size(); index++)
 	{
 		if (serverIndex.at(index).first == fds[i].fd)
 			break;
 	}
-	int start = receivedData.find("/");
+	size_t start = receivedData.find("/");
 	start = receivedData.find("/", start + 1);
-	int end = receivedData.find(" ", start);
+	size_t end = receivedData.find(" ", start);
 	std::string path = receivedData.substr(start, end - start);
 	std::string rootedPath = serverList.at(serverIndex.at(index).second).getRootDir();
 	rootedPath.append("files");
@@ -240,7 +239,7 @@ void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> 
 // OTHER
 void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
-	for (int j = 0; j < serverIndex.size(); j++)
+	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
 		{
@@ -251,7 +250,7 @@ void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> f
 	}
 
 	std::string response;
-	int index;
+	size_t index;
 
 	for (index = 0; index < serverIndex.size(); index++)
 	{
@@ -271,7 +270,7 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 {
 	std::cout << "UPLOADING" << std::endl;
 	std::cout << "i = " << i << std::endl;
-	int index;
+	size_t index;
 	for (index = 0; index < serverIndex.size(); index++)
 	{
 		if (serverIndex.at(index).first == fds[i].fd)
@@ -279,8 +278,8 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	}
 
 	// Extract the filename from the received data
-	int start = receivedData.find("filename=") + 10;
-	int end = receivedData.find("\"", start);
+	size_t start = receivedData.find("filename=") + 10;
+	size_t end = receivedData.find("\"", start);
 	std::string name = receivedData.substr(start, end - start);
 
 	std::cout << name << std::endl;
@@ -352,7 +351,7 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 // Handle chunked file upload
 void Manager::handleChunk(std::string receivedData, std::vector<struct pollfd> fds, int fdsIndex, int boundariesIndex)
 {
-	int index;
+	size_t index;
 	for (index = 0; index < serverIndex.size(); index++)
 	{
 		if (serverIndex.at(index).first == fds[fdsIndex].fd)
@@ -397,7 +396,7 @@ void Manager::handleChunk(std::string receivedData, std::vector<struct pollfd> f
 
 void Manager::handleContinue(std::string receivedData, int fdsIndex)
 {
-	for (int j = 0; j < serverIndex.size(); j++)
+	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[fdsIndex].fd)
 		{
@@ -407,7 +406,7 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 		}
 	}
 	std::cout << "CONTINUING" << std::endl;
-	int indexB;
+	size_t indexB;
 	std::cout << boundaries.at(0).second << std::endl;
 	for (indexB = 0; indexB < boundaries.size(); indexB++)
 	{
@@ -433,16 +432,14 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 	else
 	{
 		std::cout << "is same" << std::endl;
-		int namesIndex;
+		int namesIndex = 0;
 		for (size_t namesIndex = 0; namesIndex < fdsFileNames.size(); namesIndex++)
 		{
-			if (fdsIndex = fdsFileNames.at(namesIndex).first)
+			if (fdsIndex == fdsFileNames.at(namesIndex).first)
 			{
 				break;
 			}
-			
 		}
-		
 		std::cout << "name of file = " << fdsFileNames.at(namesIndex).second << std::endl;
 		std::ofstream theFile;
 		theFile.open(fdsFileNames.at(namesIndex).second, std::ofstream::app);
@@ -472,7 +469,7 @@ void Manager::handleTimeout(int fdsIndex)
 	theFile.open(name, std::ofstream::app);
 	theFile << receivedData;
 	theFile.close();
-	int index;
+	size_t index;
 	for (index = 0; index < serverIndex.size(); index++)
 	{
 		if (serverIndex.at(index).first == fds[fdsIndex].fd)

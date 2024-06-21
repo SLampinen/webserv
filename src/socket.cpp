@@ -8,7 +8,7 @@ listeningSocket::listeningSocket(int portNum)
 {
 	std::cout << "making socket (with port num " << portNum << ")" << std::endl;
 	this->port = portNum;
-	int addrLen = sizeof(address);
+	// int addrLen = sizeof(address);
 	if ((serverFd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
 	{
 		std::cout << "ERROR, " << strerror(errno) << std::endl;

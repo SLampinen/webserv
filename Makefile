@@ -1,6 +1,6 @@
 NAME = server
 
-CC = g++
+CC = c++
 CFLAGS = -Wall -Wextra -Werror -g 
 RM = rm -rf
 
@@ -15,8 +15,12 @@ OBJS = $(SRCS:.cpp=.o)
 
 all:
 	@$(MAKE) $(NAME) -j5
+
 $(NAME) : $(OBJS) $(HEADERS)
 	$(CC) $(CFLAGS) $(OBJS) -o $(NAME)
+
+$(OBJS) : %.o: %.cpp
+	$(CC) $(CFLAGS) -c -o $@ $(@:.o=.cpp)
 
 clean:
 	$(RM) $(OBJS)

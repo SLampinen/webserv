@@ -19,13 +19,13 @@ void Manager::handleTimeout(size_t index, int k)
 	fullName.append("temp");
 	fullName.append(std::to_string(index));
 	unlink(fullName.c_str());
-	exit ;
 }
 
 // Work done handling
 void Manager::handleWorkDone(size_t index, int k)
 {
 	std::cout << "Working" << std::endl;
+	std::cout << "index is " << index << " and k is " << k << std::endl;
 	std::string temp = "temp";
 	std::string fullName = serverList.at(serverIndex.at(k).second).getRootDir();
 	temp.append(std::to_string(index));
@@ -39,17 +39,17 @@ void Manager::handleWorkDone(size_t index, int k)
 	cgiOnGoing[index] = 0;
 	pids.erase(pids.begin() + k);
 }
-
 // CGI work handling
 void Manager::handleCgiWork(size_t index)
 {
 	std::cout << "Checking and working and all that for i = " << index << std::endl;
-	for (int k = 0; k < pids.size(); k++)
+	std::cout << "pids size = " << pids.size() << std::endl;
+	for (size_t k = 0; k < pids.size(); k++)
 	{
 		std::cout << time(NULL) - fdsTimestamps[index] << std::endl;
 		if (time(NULL) - fdsTimestamps[index] > RESPONSE_TIMEOUT)
 		{
-			for (int j = 0; j < serverIndex.size(); j++)
+			for (size_t j = 0; j < serverIndex.size(); j++)
 			{
 				std::cout << "j = " << j << std::endl;
 				if (serverIndex.at(j).first == fds[index].fd)
@@ -67,11 +67,11 @@ void Manager::handleCgiWork(size_t index)
 	if (deadChildPid > 0)
 	{
 		std::cout << "Child with pid " << deadChildPid << " is dead" << std::endl;
-		for (int k = 0; k < pids.size(); k++)
+		for (size_t k = 0; k < pids.size(); k++)
 		{
 			if (deadChildPid == pids.at(k).first)
 			{
-				for (int j = 0; j < serverIndex.size(); j++)
+				for (size_t j = 0; j < serverIndex.size(); j++)
 				{
 					if (serverIndex.at(j).first == fds[index].fd)
 					{

@@ -47,7 +47,7 @@ void setNonBlocking(int sockfd)
 // New connection
 bool Manager::acceptNewConnections(size_t index)
 {
-	for (int j = 0; j < serverList.size(); j++)
+	for (size_t j = 0; j < serverList.size(); j++)
 	{
 		for (int k = 0; k < serverList.at(j).getNumOfPorts(); k++)
 		{

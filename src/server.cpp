@@ -100,7 +100,7 @@ void Server::setClientBodySize(std::string size)
 	this->client_max_body_size = std::stoi(size);
 }
 
-int Server::getClientBodySize(void)
+size_t Server::getClientBodySize(void)
 {
 	return this->client_max_body_size;
 }
@@ -270,7 +270,7 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 		fileFull.append(rootDir);
 		fileFull.append("home.html");
 		std::cout << "the front page is " << fileFull << std::endl;
-		int fileFd = open(fileFull.data(), O_RDONLY);
+		open(fileFull.data(), O_RDONLY);
 		std::ifstream file(fileFull);
 		if (file.is_open() == 0)
 		{
@@ -325,7 +325,7 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	fileFull.append(fileName);
 	fileFull.append(fileExt);
 	std::cout << fileFull << std::endl;
-	int fileFd = open(fileFull.data(), O_RDONLY);
+	open(fileFull.data(), O_RDONLY);
 	std::ifstream file(fileFull);
 	if (file.is_open() == 0)
 	{
@@ -373,7 +373,7 @@ void Server::log(std::string text)
 	char timeBuffer[80];
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
-	strftime(timeBuffer, 80, "%T %d:%m:%Y", timeinfo);
+	strftime(timeBuffer, 80, "%T %d.%m.%Y", timeinfo);
 	logfile << "----------------------------------------------------------------------------------------------------" << std::endl;
 	logfile << "New entry in log, at time " << timeBuffer << std::endl;
 	logfile << text;

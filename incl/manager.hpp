@@ -21,9 +21,9 @@ private:
 	// };
 	// std::map<int, FileTransferState> clientStates;
 	std::vector<Server> serverList;
-	std::vector<std::pair<int, int>> serverIndex;
+	std::vector<std::pair<int, size_t>> serverIndex;
 
-	std::vector<std::pair<int, int>> pids;
+	std::vector<std::pair<int, size_t>> pids;
 
 	std::vector<struct pollfd> fds;
 	std::vector<int> fdsTimestamps;

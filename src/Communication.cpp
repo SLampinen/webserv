@@ -52,15 +52,21 @@ void Manager::handleClientCommunication(size_t index)
 			bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 		}
 
-		// If cgi is ongoing, do not handle the request
+		// If cgi is ongoing, throw out previous request, start new one if necessary
 		fdsTimestamps[index] = time(NULL);
 		cgiOnGoing[index] = 0;
-		for (int k = 0; k < pids.size(); k++)
+		for (size_t k = 0; k < pids.size(); k++)
 		{
 			if (index == pids.at(k).second)
 			{
 				kill(pids.at(k).first, 9);
+				//gets rid of the temp file that child made
+				std::string name = serverList.at(serverIndex.at(k).second).getRootDir();
+				name.append("temp");
+				name.append(std::to_string(index));
+				unlink(name.c_str());
 				pids.erase(pids.begin() + k);
+				
 			}
 		}
 		// if (!clientStates[fds[index].fd].transferInProgress)

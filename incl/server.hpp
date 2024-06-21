@@ -18,7 +18,7 @@ private:
 	std::map<int, std::string> errorPages;
 	std::string cgiExt;
 	std::string cgiPath;
-	int client_max_body_size;
+	size_t client_max_body_size;
 	bool directoryIndex;
 public:
 	Server();
@@ -42,7 +42,7 @@ public:
 	std::string getCGIExt(void);
 	std::string getCGIPath(void);
 	int getNumOfPorts(void);
-	int getClientBodySize(void);
+	size_t getClientBodySize(void);
 	std::string getRootDir(void);
 
 	void makeSocketList(void);
