@@ -31,12 +31,14 @@ private:
 	std::vector<std::string> magic;//Does nothing, but removing it breaks the code
 	std::vector<std::pair<std::string, std::string> > boundaries;
 	std::vector<std::pair<int, std::string> > fdsFileNames;
+	
 public:
 	Manager();
 	~Manager();
 	Manager(const Manager &var);
 	Manager &operator=(const Manager &var);
 
+	std::string name;
 	void setupPollingforServers();
 
 	void handlePolling();

@@ -69,9 +69,9 @@ std::string Server::getServerName(void)
 	return this->servName;
 }
 
-void Server::setServerName(std::string name)
+void Server::setServerName(std::string serverName)
 {
-	this->servName = name;
+	this->servName = serverName;
 }
 
 void Server::setRootDir(std::string dir)

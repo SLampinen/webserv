@@ -48,7 +48,7 @@ public:
 	void makeSocketList(void);
 
 	void addPort(int port);
-	void setServerName(std::string name);
+	void setServerName(std::string serverName);
 	void setRootDir(std::string dir);
 	void setErrorDir(std::string dir);
 	void setCGIExt(std::string ext);

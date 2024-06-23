@@ -264,7 +264,6 @@ void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> f
 	send(fds[i].fd, response.c_str(), response.length(), 0);
 }
 
-
 // Handle file upload
 void Manager::handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i)
 {
@@ -278,6 +277,7 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	}
 
 	// Extract the filename from the received data
+	std::cout << "receivedData = " << receivedData << std::endl;
 	size_t start = receivedData.find("filename=") + 10;
 	size_t end = receivedData.find("\"", start);
 	std::string name = receivedData.substr(start, end - start);
@@ -295,9 +295,10 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 			break;
 		}
 	}
-	
+
 	fdsFileNames.push_back(std::make_pair(i, name));
 	std::cout << "name = " << name << std::endl;
+	printf("WHAT HTE FUCK\n\n");
 
 	boundaries.push_back(std::make_pair(name, boundary));
 
@@ -316,28 +317,28 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 
 	// Find the start and end of the file content in the received data
 	start = receivedData.find("Content-Type");
-    std::cout << "start = " << start << std::endl;
+	std::cout << "start = " << start << std::endl;
 	if (start != std::string::npos)
 		start = receivedData.find("\n", start);
 	else
 		start = receivedData.find("\n");
-    std::cout << "start = " << start << std::endl;
+	std::cout << "start = " << start << std::endl;
 	start = receivedData.find_first_not_of("\r\n", start);
 	end = receivedData.find(boundary, start);
-    // end = receivedData.find_last_of("\r\n", end);
+	// end = receivedData.find_last_of("\r\n", end);
 	if (end != std::string::npos)
-    {
-        std::cout << "Boundary found, this is the end of firefox content" << std::endl;
-        end = receivedData.find_last_of("\r\n", end) - 1;
-        std::string fileContent = receivedData.substr(start, end - start);
-            if (end > start)
-        theFile << fileContent;
-    }
-    else
-    {
-        std::string fileContent = receivedData.substr(start);
-        theFile << fileContent;
-    }
+	{
+		std::cout << "Boundary found, this is the end of firefox content" << std::endl;
+		end = receivedData.find_last_of("\r\n", end) - 1;
+		std::string fileContent = receivedData.substr(start, end - start);
+		if (end > start)
+			theFile << fileContent;
+	}
+	else
+	{
+		std::string fileContent = receivedData.substr(start);
+		theFile << fileContent;
+	}
 	theFile.close();
 
 	// Send a success response
@@ -358,7 +359,7 @@ void Manager::handleChunk(std::string receivedData, std::vector<struct pollfd> f
 			break;
 	}
 	std::ofstream theFile;
-	std::string name = boundaries.at(boundariesIndex).first;
+
 	std::cout << "name = " << name << std::endl;
 	theFile.open(name, std::ofstream::app);
 	if (!theFile.is_open())
@@ -417,13 +418,13 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 			break;
 		}
 	}
+
 	// std::cerr << receivedData << std::endl;
 	std::cout << indexB << " and " << boundaries.size() << std::endl;
 	if (indexB < boundaries.size())
 	{
 		std::cout << "is smaller" << std::endl;
-		std::string name = boundaries.at(indexB).first;
-		std::cout << "name of file = " << name << std::endl;
+		std::cout << "name of file shit = " << name << std::endl;
 		std::ofstream theFile;
 		theFile.open(name, std::ofstream::app);
 		theFile << receivedData;
@@ -440,7 +441,7 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 				break;
 			}
 		}
-		std::cout << "name of file = " << fdsFileNames.at(namesIndex).second << std::endl;
+		std::cout << "name of file fuck = " << fdsFileNames.at(namesIndex).second << std::endl;
 		std::ofstream theFile;
 		theFile.open(fdsFileNames.at(namesIndex).second, std::ofstream::app);
 		theFile << receivedData;
@@ -464,7 +465,6 @@ void Manager::handleTimeout(int fdsIndex)
 	{
 		receivedData = receivedData.substr(0, receivedData.find(boundaries.at(fdsIndex).second));
 	}
-	std::string name = boundaries.at(fdsIndex).first;
 	std::ofstream theFile;
 	theFile.open(name, std::ofstream::app);
 	theFile << receivedData;

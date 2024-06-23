@@ -51,7 +51,7 @@ void Manager::handleClientCommunication(size_t index)
 			receivedData.append(rest);
 			bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 		}
-
+		std::cout << "Received data FIRST: " << receivedData << std::endl;
 		// If cgi is ongoing, throw out previous request, start new one if necessary
 		fdsTimestamps[index] = time(NULL);
 		cgiOnGoing[index] = 0;
@@ -61,10 +61,10 @@ void Manager::handleClientCommunication(size_t index)
 			{
 				kill(pids.at(k).first, 9);
 				//gets rid of the temp file that child made
-				std::string name = serverList.at(serverIndex.at(k).second).getRootDir();
-				name.append("temp");
-				name.append(std::to_string(index));
-				unlink(name.c_str());
+				std::string serverName = serverList.at(serverIndex.at(k).second).getRootDir();
+				serverName.append("temp");
+				serverName.append(std::to_string(index));
+				unlink(serverName.c_str());
 				pids.erase(pids.begin() + k);
 				
 			}
