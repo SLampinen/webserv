@@ -7,6 +7,8 @@ int Manager::readConfig(std::string fileName)
 	int start, end;
 	std::string wip;
 
+	ConfigParser config_parser("cfg/server.conf");
+
 	configFile.open(fileName);
 	if (!configFile.good())
 	{

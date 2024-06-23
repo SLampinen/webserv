@@ -3,6 +3,7 @@
 #include "library.hpp"
 #include "socket.hpp"
 #include "server.hpp"
+#include "ConfigParser.hpp"
 
 // Connection timeout must be greater than response timeout
 // lest great horrors emerge

@@ -2,7 +2,7 @@
 #include "ws_functions.hpp"
 #include "ConfigParser.hpp"
 
-ConfigParser::ConfigParser(const std::string &filepath) : _ref("config_defaults") ,_cfg(filepath) {
+ConfigParser::ConfigParser(const std::string &filepath) : _ref("cfg/config_defaults") ,_cfg(filepath) {
 	_config_sections.push_back(ConfigSection(GLOBAL));
 }
 

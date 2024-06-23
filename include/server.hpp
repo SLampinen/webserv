@@ -3,7 +3,7 @@
 # include "library.hpp"
 # include "socket.hpp"
 
-# define DEFAULTCONFIG "incl/config.conf"
+# define DEFAULTCONFIG "cfg/oldconfig.conf"
 # define DEFAULT404DIR "error/404Default.html"
 # define POLL_TIMEOUT 1000
 
