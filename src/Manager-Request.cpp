@@ -82,21 +82,34 @@ size_t getServer(std::vector<std::pair<int, size_t> > const &server_index, int f
 	return index;
 }
 
-// ! added by rleskine, works with chunk-branch
-void Manager::handleGet2(std::string receivedData, std::vector<struct pollfd> fds, int i) {
-	size_t pos = receivedData.find(' ');
-	std::string filepath = receivedData.substr(pos + 1, receivedData.find(' ', pos + 1));
+// ! added by rleskine
+std::string getFilePath(std::string const &header) {
+	size_t pos = header.find(' ') + 2; // ! + 1 if leading slash
+	std::string filepath = header.substr(pos, header.find(' ', pos) - pos);
 	if (filepath.find('?') != std::string::npos)
 		filepath = filepath.substr(0, filepath.find('?') + 1);
+	return filepath;
+}
+
+// ! added by rleskine, works with chunk-branch
+void Manager::handleGet2(std::string receivedData, std::vector<struct pollfd> fds, int i) {
+	//size_t pos = receivedData.find(' ') + 2; // ! + 1 if leading slash
+	//std::string filepath = receivedData.substr(pos, receivedData.find(' ', pos) - pos);
+	//if (filepath.find('?') != std::string::npos)
+	//	filepath = filepath.substr(0, filepath.find('?') + 1);
 	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
 	server.log(receivedData);
-	if (filepath.find(server.getCGIExt()) != std::string::npos)
+	if (getFilePath(receivedData).find(server.getCGIExt()) != std::string::npos)
 		return (handleCGI(receivedData, fds, i));
-	std::string response = server.buildHTTPResponse(filepath, "");
+	std::string response = server.buildHTTPResponse(getFilePath(receivedData), "");
 	if (server.getClientBodySize() && server.getClientBodySize() < response.size()) {
-		
+		std::string const body("ERROR 413 Request Entity Too Large");
+		response = server.makeHeader(413, body.size());
+		response.append(body);
 	}
+	send(fds[i].fd, response.c_str(), response.length(), 0);
 }
+
 
 // ! added by rleskine, version that works when merged with parsing
 // void Manager::handleGet(std::string request_data, std::vector<struct pollfd> fds, int i) {
@@ -104,9 +117,9 @@ void Manager::handleGet2(std::string receivedData, std::vector<struct pollfd> fd
 // 	std::string filepath = request_data.substr(pos, request_data.find(' ', pos) - pos);
 // 	if (filepath.find('?') != std::string::npos)
 // 		filepath = filepath.substr(0, filepath.find('?') + 1);
-// 	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
+// 	ConfigServerServer &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
 // 	server.log(request_data);
-// 	Response response = server.resolveRequest(Request(REQ_GET, filepath));
+// 	Response response = server.resolveRequest(REQ_GET, filepath);
 // 	if (response.getType() == RES_CGI) // ! CGI
 // 		return (handleCGI());
 // 	else if (response.getType() == RES_DIR) // ! Directory

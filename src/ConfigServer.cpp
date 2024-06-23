@@ -1,7 +1,7 @@
 #include "ws_functions.hpp"
 #include "ConfigServer.hpp"
 
-ConfigServer::ConfigServer() : ConfigSection("Configserver"), _max_client_body_size(0) {}
+ConfigServer::ConfigServer() : ConfigSection("Configserver"), _max_client_body_size(0), _last_matched_location(std::string::npos) {}
 
 // interprets values from the base ConfigSection class and stores them in ConfigServer variables
 void ConfigServer::initialize() {
@@ -21,10 +21,10 @@ void ConfigServer::initialize() {
 	if (_ports.empty()) _ports.push_back(80);
 	if (doesLineExist("Configserver_name", idx)) {
 		for (size_t i = 1; !getIndexArg(idx, i).empty(); i++)
-			_Configserver_names.push_back(getIndexArg(idx, i));
+			_server_names.push_back(getIndexArg(idx, i));
 	}
-	for (const std::string &s : _Configserver_names)
-		if (s == "*" && _Configserver_names.size() != 1)
+	for (const std::string &s : _server_names)
+		if (s == "*" && _server_names.size() != 1)
 			throw ConfigServerException("ConfigServer name wildcard '*' used, but other Configserver names also present");
 	if (doesLineExist("error_page", idx)) {
 		addErrorPage(getIndexArg(idx, 1), getIndexArg(idx, 2));
@@ -53,11 +53,17 @@ void ConfigServer::addLocation(Location location) {
 bool ConfigServer::matchRequest(const Request &request) {
 	if (!matchPort(request._port))
 		return false;
-	if (_Configserver_names.size() == 1 && _Configserver_names.at(0) == "*") return true;
-	for (const std::string &s : _Configserver_names) {
+	if (_server_names.size() == 1 && _server_names.at(0) == "*") return true;
+	for (const std::string &s : _server_names) {
 		if (s == request._host)
 			return true;
 	}
+	return false;
+}
+
+bool ConfigServer::matchPort(const size_t port) {
+	for (size_t const &_port : _ports)
+		if (port == _port) return true;
 	return false;
 }
 
@@ -94,6 +100,7 @@ Response ConfigServer::resolveRequest(int const method, std::string const &reque
 	size_t match_index;
 	if (!resolveLocation(method, request_path, match_index))
 		return (Response(404, getErrorPage(404)));
+	_last_matched_location = match_index;
 	std::string root_path = _locations.at(match_index).makeRootPath(request_path);
 	if (request_path.back() == '/' && root_path.back() == '/')
 		return (Response(RES_DIR, root_path));
@@ -112,21 +119,20 @@ std::string ConfigServer::getErrorPage(const size_t page_num) {
 	}
 }
 
-bool ConfigServer::matchPort(const size_t port) {
-	for (size_t const &_port : _ports)
-		if (port == _port) return true;
-	return false;
-}
+std::string ConfigServer::getName() const { return _server_names.at(0); }
+size_t ConfigServer::getSize() const { return _max_client_body_size; }
+size_t ConfigServer::getNumOfPorts() const { return _ports.size(); }
+//Location &ConfigServer::getMatchedLocation() const { return _locations.at(_last_matched_location); }
 
 void ConfigServer::printData() {
 	std::cout << "\e[0;32mConfigServer.printData() : Ports \e[0;92m";
 	for (size_t const &port : _ports)
 		std::cout << "[" << port << "]";
 	std::cout << "\e[0;32m" << std::endl;
-	if (_Configserver_names.size() > 0) std::cout << "ConfigServer name: \e[0;92m";
-	for (const std::string &s : _Configserver_names)
+	if (_server_names.size() > 0) std::cout << "Server name: \e[0;92m";
+	for (const std::string &s : _server_names)
 		std::cout << "[" << s << "]";
-	if (_Configserver_names.size() > 0) std::cout << "\e[0;32m" << std::endl;
+	if (_server_names.size() > 0) std::cout << "\e[0;32m" << std::endl;
 	if (_error_pages.size() > 0) std::cout << "Error pages:" << std::endl;
 	if (_max_client_body_size > 0) std::cout << "Max client body size: " << _max_client_body_size << std::endl;
 	for (const std::pair<const size_t, std::string> &p : _error_pages)
@@ -138,8 +144,8 @@ void ConfigServer::printData() {
 
 std::string const ConfigServer::printId() const {
 	std::string id("");
-	if (!_Configserver_names.empty())
-		id.append(_Configserver_names.at(0));
+	if (!_server_names.empty())
+		id.append(_server_names.at(0));
 	for (size_t const &p : _ports)
 		id.append(":" + std::to_string(p));
 	return id;

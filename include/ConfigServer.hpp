@@ -17,7 +17,6 @@ class ConfigServer : public ConfigSection {
 		bool addConfigServerName(const std::string name);
 		bool addErrorPage(const std::string nbr, const std::string file_path);
 		void addLocation(Location location);
-		void addCGI(const std::string suffix, const std::string interpreter);
 
 		// accessed after setup
 		bool matchRequest(const Request &request);
@@ -27,12 +26,19 @@ class ConfigServer : public ConfigSection {
 		Response resolveRequest(const Request &request);
 		std::string getErrorPage(const size_t page_num);
 
+		// added to make compatible with existing Server
+		std::string getName() const;
+		size_t getSize() const;
+		size_t getNumOfPorts() const;
+		Location &getMatchedLocation() const;
+
 	private:
 		size_t _max_client_body_size;
 		std::vector<size_t> _ports;
-		std::vector<std::string> _Configserver_names;
+		std::vector<std::string> _server_names;
 		std::map<size_t, std::string> _error_pages;
 		std::vector<Location> _locations;
+		size_t _last_matched_location;
 	public:
 		class ConfigServerException : public std::exception {
 			public:

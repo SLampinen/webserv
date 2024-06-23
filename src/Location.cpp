@@ -1,7 +1,8 @@
 #include "Location.hpp"
 #include "ws_functions.hpp"
 
-Location::Location(const std::string path) : ConfigSection("location"), _path(path), _get(false), _post(false), _del(false), _dir_list(false) {}
+Location::Location(const std::string path) : ConfigSection("location"), 
+	_path(path), _get(false), _post(false), _del(false), _dir_list(false), _matched_cgi(std::pair("", "")) {}
 
 void Location::initialize() {
 	size_t idx = 0;
@@ -54,10 +55,15 @@ std::string Location::makeRootPath(std::string const &request_path) {
 bool Location::checkCGI(std::string const &request_path, std::string &cgi_path) {
 	for (std::pair<std::string, std::string> const pair : _cgi) {
 		if (std::string(request_path.rbegin(), request_path.rend()).find(std::string(pair.first.rbegin(), pair.first.rend())) == 0)
-			return (cgi_path = pair.second, true);
+			return (cgi_path = pair.second, _matched_cgi = pair, true);
 	}
-	return false;
+	return (_matched_cgi = std::pair("", ""), false);
 }
+
+std::string Location::getLastCGISuffix() { return _matched_cgi.first; }
+std::string Location::getLastCGIPath() { return _matched_cgi.second; }
+bool Location::directoryIndexAllowed() { return _dir_list; }
+std::string Location::defaultIndexFile() { return _index_file; }
 
 bool Location::methodAvailable(const int method) {
 	if (method != REQ_GET && method != REQ_POST && method != REQ_DEL)

@@ -2,13 +2,13 @@
 # define SERVER_HPP
 # include "library.hpp"
 # include "socket.hpp"
+# include "ConfigServer.hpp"
 
-# define DEFAULTCONFIG "cfg/oldconfig.conf"
+# define DEFAULTCONFIG "cfg/config.conf"
 # define DEFAULT404DIR "error/404Default.html"
 # define POLL_TIMEOUT 1000
 
-class Server
-{
+class Server {
 private:
 	int numOfPorts;
 	std::vector<int> ports;
@@ -20,11 +20,17 @@ private:
 	std::string cgiPath;
 	size_t client_max_body_size;
 	bool directoryIndex;
+	std::string indexFile;
+	ConfigServer &csrv;
+
+	//Server(const Server &var);
 public:
-	Server();
+	//Server();
 	~Server();
-	Server(const Server &var);
+	Server(ConfigServer &cfg_server);
 	Server& operator=(const Server &var);
+
+	void setLocation(Location &loc); // changes values to match the current requests location // ! added by rleskine
 
 	std::string makeStatus(int status);
 

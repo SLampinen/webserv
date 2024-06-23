@@ -33,6 +33,7 @@ class Response {
 			// -2 if CGI, -1 if file, positive int if http
 		std::string _path;
 		std::string _cgi_path;
+		
 };
 
 #endif
