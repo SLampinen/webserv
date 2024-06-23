@@ -1,4 +1,4 @@
-#include "../incl/socket.hpp"
+#include "socket.hpp"
 
 listeningSocket::listeningSocket()
 {

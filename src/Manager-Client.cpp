@@ -1,4 +1,4 @@
-#include "../incl/manager.hpp"
+#include "manager.hpp"
 
 // Close inactive connections
 void Manager::closeInactiveConnections(size_t index)
@@ -75,7 +75,7 @@ void Manager::handleClientCommunication(size_t index)
 			if (receivedData.find("GET") != std::string::npos)
 			{
 				std::cout << "GETTING" << std::endl;
-				handleGet(receivedData, fds, index);
+				handleGet2(receivedData, fds, index);
 			}
 			else if (receivedData.find("POST") != std::string::npos)
 			{

@@ -1,4 +1,4 @@
-#include "../incl/manager.hpp"
+#include "manager.hpp"
 // --CGI handling--
 // Timeout handling
 void Manager::handleTimeout(size_t index, int k)

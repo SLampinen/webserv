@@ -1,4 +1,4 @@
-#include "../incl/manager.hpp"
+#include "manager.hpp"
 
 // Polling setup
 void Manager::setupPollingforServers()
