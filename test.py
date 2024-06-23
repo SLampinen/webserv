@@ -46,7 +46,7 @@ r = requests.get('http://localhost:4243/upload')
 printResponse(r)
 
 
-# upload file
+# --------- upload file ---------
 def upload_file(url, file_path):
     """Uploads a file to the specified URL."""
     # Use 'with' to ensure the file is closed after being uploaded
@@ -77,3 +77,30 @@ if compare_files(original_file_path, uploaded_file_path):
     print("The uploaded file matches the original file.")
 else:
     print("The uploaded file does not match the original file.")
+
+
+
+# ------------ chunks ----------
+def generate_data_chunks(file_path):
+    """Generator function to read and yield chunks of data from a file."""
+    chunk_size = 1024  # 1KB per chunk
+    with open(file_path, 'rb') as file:
+        chunk = file.read(chunk_size)
+        while chunk:
+            yield chunk
+            chunk = file.read(chunk_size)
+
+# URL to which the data will be sent
+url = 'http://localhost:4243/upload'
+
+# Path to the large file you want to send in chunks
+file_path = '5mb.txt'
+
+# Make a POST request with chunked data
+response = requests.post(url, data=generate_data_chunks(file_path))
+
+# Check the response
+if response.status_code == 200:
+    print("Data sent successfully.")
+else:
+    print("Failed to send data. Status code:", response.status_code)
