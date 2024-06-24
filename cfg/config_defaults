@@ -1,0 +1,21 @@
+# INTERNAL FILE, DO NOT MODIFY
+http N S
+server S
+test N T
+nntest NN
+ntttest N TT
+HTTP
+max_client_body_size N
+SERVER
+listen NN
+server_name TT
+location T S
+error_page N T
+max_client_body_size N
+LOCATION
+root T
+rewrite T
+methods TT
+directory_index T
+default_index T
+cgi_extension T T

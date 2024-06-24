@@ -1,43 +1,39 @@
-#include "../incl/manager.hpp"
+#include "manager.hpp"
 
-Manager::Manager()
-{
-	std::cerr << "----------" << std::endl
-			  << "Boundaries size : " << boundaries.size() << std::endl
-			  << "----------" << std::endl;
+Manager::Manager() {}
+
+Manager::~Manager() {
+	//for (ConfigServer &csrv : configserverList) csrv.getNumOfPorts();
+	//for (Server &srv : serverList) srv.getNumOfPorts();
 }
 
-Manager::~Manager()
-{
-}
+// Manager::Manager(const Manager &var)
+// {
+// 	this->pids = var.pids;
+// 	this->serverList = var.serverList;
+// 	this->serverIndex = var.serverIndex;
+// 	this->fds = var.fds;
+// 	this->cgiOnGoing = var.cgiOnGoing;
+// 	this->fdsTimestamps = var.fdsTimestamps;
 
-Manager::Manager(const Manager &var)
-{
-	this->pids = var.pids;
-	this->serverList = var.serverList;
-	this->serverIndex = var.serverIndex;
-	this->fds = var.fds;
-	this->cgiOnGoing = var.cgiOnGoing;
-	this->fdsTimestamps = var.fdsTimestamps;
+// 	this->boundaries = var.boundaries;
+// }
 
-	this->boundaries = var.boundaries;
-}
-
-Manager &Manager::operator=(const Manager &var)
-{
-	if (this != &var)
-	{
-		this->pids = var.pids;
-		this->serverList = var.serverList;
-		this->serverIndex = var.serverIndex;
-		this->fds = var.fds;
-		this->cgiOnGoing = var.cgiOnGoing;
-		this->fdsTimestamps = var.fdsTimestamps;
-
-		this->boundaries = var.boundaries;
-	}
-	return (*this);
-}
+// Manager &Manager::operator=(const Manager &var)
+// {
+// 	if (this != &var)
+// 	{
+// 		this->pids = var.pids;
+// 		this->serverList = var.serverList;
+// 		this->serverIndex = var.serverIndex;
+// 		this->fds = var.fds;
+// 		this->cgiOnGoing = var.cgiOnGoing;
+// 		this->fdsTimestamps = var.fdsTimestamps;
+	
+// 		this->boundaries = var.boundaries;
+// 	}
+// 	return (*this);
+// }
 
 void setNonBlocking(int sockfd)
 {
@@ -48,7 +44,7 @@ void setNonBlocking(int sockfd)
 // New connection
 bool Manager::acceptNewConnections(size_t index)
 {
-	for (int j = 0; j < serverList.size(); j++)
+	for (size_t j = 0; j < serverList.size(); j++)
 	{
 		for (int k = 0; k < serverList.at(j).getNumOfPorts(); k++)
 		{
@@ -94,20 +90,21 @@ bool Manager::acceptNewConnections(size_t index)
 // Run
 void Manager::run(std::string configFile)
 {
-	std::cerr << "----------" << std::endl
-			  << "Boundaries size : " << boundaries.size() << std::endl
-			  << "----------" << std::endl;
+	std::cout << "opening config file: " << configFile << std::endl;
+	ConfigParser config_parse(configFile);
+	readConfig(config_parse);
+	std::cerr << "----------" << std::endl << "Boundaries size : " << boundaries.size() << std::endl << "----------" << std::endl;
 	std::cerr << "Timestamps size : " << fdsTimestamps.size() << std::endl;
-	if (readConfig(configFile) == 0)
-	{
-		std::cerr << "ERROR reading config file" << std::endl;
-		return;
-	}
+	// if (readConfig(configFile) == 0)
+	// {
+	// 	std::cerr << "ERROR reading config file" << std::endl;
+	// 	return;
+	// }
 	std::cout << "--------------------------------------------------" << std::endl
 			  << "number of servers = " << serverList.size() << std::endl;
 
 	setupPollingforServers();
-
+	
 	while (true)
 	{
 		handlePolling();

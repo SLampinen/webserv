@@ -1,142 +1,62 @@
-#include "../incl/server.hpp"
+#include "server.hpp"
 
-Server::Server()
-{
-	this->servName = "defaultserv";
-	this->error404Dir = DEFAULT404DIR;
-	this->cgiExt = "";
-	this->cgiPath = "";
-	this->client_max_body_size = 0;
-	this->numOfPorts = 0;
-	this->directoryIndex = true;
+// Server::Server() {
+// 	this->servName = "defaultserv";
+// 	this->error404Dir = DEFAULT404DIR;
+// 	this->cgiExt = "";
+// 	this->cgiPath = "";
+// 	this->client_max_body_size = 0;
+// 	this->numOfPorts = 0;
+// 	this->directoryIndex = true;
+// }
+
+Server::~Server() { std::cout << "Deleting server" << std::endl; }
+
+// Server::Server(const Server &var)
+// {
+// 	this->servName = var.servName;
+// 	this->rootDir = var.rootDir;
+// 	this->error404Dir = var.error404Dir;
+// 	this->errorPages = var.errorPages;
+// 	this->cgiExt = var.cgiExt;
+// 	this->cgiPath = var.cgiPath;
+// 	this->client_max_body_size = var.client_max_body_size;
+// 	this->numOfPorts = var.numOfPorts;
+// 	this->ports = var.ports;
+// 	this->listeners = var.listeners;
+// 	this->directoryIndex = var.directoryIndex;
+// }
+
+Server::Server(ConfigServer &cfg_srv) : csrv(cfg_srv) { 
+	servName = cfg_srv.getName();
+	rootDir = "";
+	cgiExt = "";
+	cgiPath = "";
+	client_max_body_size = cfg_srv.getSize();
+	numOfPorts = cfg_srv.getNumOfPorts();
 }
 
-Server::~Server()
-{
-	std::cout << "Deleting server" << std::endl;
+void Server::setLocation(Location &loc) {
+	rootDir = loc.getRootPath();
+	//if (rootDir.back() == '/') rootDir = rootDir.substr(0, rootDir.size() - 1);
+	cgiExt = loc.getLastCGISuffix();
+	cgiPath = loc.getLastCGIPath();
+	directoryIndex = loc.directoryIndexAllowed();
+	indexFile = loc.defaultIndexFile();
 }
 
-Server::Server(const Server &var)
-{
-	this->servName = var.servName;
-	this->rootDir = var.rootDir;
-	this->error404Dir = var.error404Dir;
-	this->errorPages = var.errorPages;
-	this->cgiExt = var.cgiExt;
-	this->cgiPath = var.cgiPath;
-	this->client_max_body_size = var.client_max_body_size;
-	this->numOfPorts = var.numOfPorts;
-	this->ports = var.ports;
-	this->listeners = var.listeners;
-	this->directoryIndex = var.directoryIndex;
-}
-
-Server &Server::operator=(const Server &var)
-{
-	if (this != &var)
-	{
-		this->servName = var.servName;
-		this->rootDir = var.rootDir;
-		this->error404Dir = var.error404Dir;
-		this->errorPages = var.errorPages;
-		this->cgiExt = var.cgiExt;
-		this->cgiPath = var.cgiPath;
-		this->client_max_body_size = var.client_max_body_size;
-		this->numOfPorts = var.numOfPorts;
-		this->ports = var.ports;
-		this->listeners = var.listeners;
-		this->directoryIndex = var.directoryIndex;
-	}
-	return (*this);
-}
-
-void Server::print(void)
-{
-	std::cout << "server name = " << servName << std::endl;
-	std::cout << "(relative) root dir = " << rootDir << std::endl;
-	std::cout << "error dir = " << error404Dir << std::endl;
-	std::cout << "cgi path and ext  = " << cgiPath << " and " << cgiExt << std::endl;
-	std::cout << "Num of ports = " << numOfPorts << std::endl;
-	std::cout << "ports are " << std::endl;
-	for (int i = 0; i < numOfPorts; i++)
-	{
-		std::cout << ports.at(i) << std::endl;
-	}
-}
-
-std::string Server::getServerName(void)
-{
-	return this->servName;
-}
-
-void Server::setServerName(std::string name)
-{
-	this->servName = name;
-}
-
-void Server::setRootDir(std::string dir)
-{
-	this->rootDir = dir;
-}
-
-void Server::setErrorDir(std::string dir)
-{
-	this->error404Dir = dir;
-}
-
-void Server::setCGIExt(std::string ext)
-{
-	if (this->cgiExt.empty())
-		this->cgiExt = ext;
-}
-
-void Server::setCGIPath(std::string path)
-{
-	this->cgiPath = path;
-}
-
-void Server::setClientBodySize(std::string size)
-{
-	this->client_max_body_size = std::stoi(size);
-}
-
-int Server::getClientBodySize(void)
-{
-	return this->client_max_body_size;
-}
-
-std::string Server::getCGIPath(void)
-{
-	return this->cgiPath;
-}
-
-std::string Server::getCGIExt(void)
-{
-	return this->cgiExt;
-}
+std::string Server::getServerName(void) { return this->servName; }
+size_t Server::getClientBodySize(void) { return this->client_max_body_size; }
+std::string Server::getCGIPath(void) { return this->cgiPath; }
+std::string Server::getCGIExt(void) { return this->cgiExt; }
 
 std::string Server::getMIMEType(std::string fileExt)
 {
-	if (fileExt.compare(".html") == 0 || fileExt.compare(".htm") == 0)
-	{
-		return "text/html";
-	}
-	else if (fileExt.compare(".txt") == 0)
-	{
-		return "text/plain";
-	}
-	else if (fileExt.compare(".jpg") == 0 || fileExt.compare(".jpeg") == 0)
-	{
-		return "image/jpeg";
-	}
-	else if (fileExt.compare(".png") == 0)
-	{
-		return "image/png";
-	}
-	else
-	{
-		return "application/octet-stream";
-	}
+	if (fileExt.compare(".html") == 0 || fileExt.compare(".htm") == 0) { return "text/html"; }
+	else if (fileExt.compare(".txt") == 0) { return "text/plain"; }
+	else if (fileExt.compare(".jpg") == 0 || fileExt.compare(".jpeg") == 0) { return "image/jpeg"; }
+	else if (fileExt.compare(".png") == 0) { return "image/png"; }
+	else { return "application/octet-stream"; }
 }
 
 std::string Server::makeStatus(int status)
@@ -219,36 +139,46 @@ std::string Server::makeStatus5xx(int status)
 
 	return " ERROR";
 }
-std::string Server::makeHeader(int responseStatus, int responseSize)
-{
-	std::stringstream headerStream;
-	std::string header;
+// std::string Server::makeHeader(int responseStatus, int responseSize)
+// {
+// 	std::stringstream headerStream;
+// 	std::string header;
+// 	headerStream << "HTTP/1.1 " << responseStatus;
+// 	if (responseStatus >= 100 && responseStatus <= 199)
+// 		headerStream << " ";
+// 	else if (responseStatus >= 200 && responseStatus <= 299)
+// 		headerStream << makeStatus2xx(responseStatus) << "\r\n";
+// 	else if (responseStatus >= 300 && responseStatus <= 399)
+// 		headerStream << makeStatus3xx(responseStatus) << "\r\n";
+// 	else if (responseStatus >= 400 && responseStatus <= 499)
+// 		headerStream << makeStatus4xx(responseStatus) << "\r\n";
+// 	else if (responseStatus >= 500 && responseStatus <= 599)
+// 		headerStream << makeStatus5xx(responseStatus) << "\r\n";
+// 	//not used right now, will be used once config parser gets updated
+// 	std::stringstream newStream;
+// 	newStream << makeStatus(responseStatus) << "\r\n";
+// 	std::cout << "DEBUG: " << newStream.str() << std::endl;
+// 	//end of future/debug
+// 	headerStream << "Content-Length: " << responseSize << "\r\n\r\n";
+// 	header = headerStream.str();
+// 	if (header.find("ERROR") != std::string::npos)
+// 	{
+// 		std::cout << "Created ERROR, this is bad" << std::endl;
+// 		return "ERROR";
+// 	}
+// 	return header;
+// }
 
-	headerStream << "HTTP/1.1 " << responseStatus;
-	if (responseStatus >= 100 && responseStatus <= 199)
-		headerStream << " ";
-	else if (responseStatus >= 200 && responseStatus <= 299)
-		headerStream << makeStatus2xx(responseStatus) << "\r\n";
-	else if (responseStatus >= 300 && responseStatus <= 399)
-		headerStream << makeStatus3xx(responseStatus) << "\r\n";
-	else if (responseStatus >= 400 && responseStatus <= 499)
-		headerStream << makeStatus4xx(responseStatus) << "\r\n";
-	else if (responseStatus >= 500 && responseStatus <= 599)
-		headerStream << makeStatus5xx(responseStatus) << "\r\n";
-
-	// not used right now, will be used once config parser gets updated
-	std::stringstream newStream;
-	newStream << makeStatus(responseStatus) << "\r\n";
-	std::cout << "DEBUG: " << newStream.str() << std::endl;
-	// end of future/debug
-
-	headerStream << "Content-Length: " << responseSize << "\r\n\r\n";
-	header = headerStream.str();
-	if (header.find("ERROR") != std::string::npos)
-	{
-		std::cout << "Created ERROR, this is bad" << std::endl;
-		return "ERROR";
-	}
+// ! merge version by rleskine TODO: csrv missing, update getErrorPage in ConfigServer
+std::string Server::makeHeader(int responseStatus, int responseSize) {
+	std::string header = "HTTP/1.1 " + std::to_string(responseStatus) + " ";
+	//std::string error_page;
+	std::string error_page = csrv.getErrorPage(responseStatus);
+	if (!error_page.empty())
+		header += csrv.getErrorPage(responseStatus); // ! update getErrorpage to fetch file
+	else
+		header += "PUT DEFAULT RESPONSE TEXT HERE";
+	header += "\r\nContent-Length: " + std::to_string(responseSize) + "\r\n\r\n";
 	return header;
 }
 
@@ -269,7 +199,7 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 		fileFull.append(rootDir);
 		fileFull.append("home.html");
 		std::cout << "the front page is " << fileFull << std::endl;
-		int fileFd = open(fileFull.data(), O_RDONLY);
+		open(fileFull.data(), O_RDONLY);
 		std::ifstream file(fileFull);
 		if (file.is_open() == 0)
 		{
@@ -324,7 +254,7 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	fileFull.append(fileName);
 	fileFull.append(fileExt);
 	std::cout << fileFull << std::endl;
-	int fileFd = open(fileFull.data(), O_RDONLY);
+	open(fileFull.data(), O_RDONLY);
 	std::ifstream file(fileFull);
 	if (file.is_open() == 0)
 	{
@@ -372,7 +302,7 @@ void Server::log(std::string text)
 	char timeBuffer[80];
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
-	strftime(timeBuffer, 80, "%T %d:%m:%Y", timeinfo);
+	strftime(timeBuffer, 80, "%T %d.%m.%Y", timeinfo);
 	logfile << "----------------------------------------------------------------------------------------------------" << std::endl;
 	logfile << "New entry in log, at time " << timeBuffer << std::endl;
 	logfile << text;
@@ -381,33 +311,30 @@ void Server::log(std::string text)
 	logfile.close();
 }
 
-void Server::addPort(int port)
-{
-	std::cout << "HERE port = " << port << std::endl;
-	int i;
-	for (i = 0; i < numOfPorts; i++)
-	{
-		if (ports.at(i) == port)
-			break;
-	}
-	std::cout << "HERE, i = " << i << " numOfports = " << numOfPorts << std::endl;
-	if (i == numOfPorts)
-	{
-		ports.push_back(port);
-		numOfPorts++;
-	}
-}
+// void addPort(int port)
+// {
+// 	std::cout << "HERE port = " << port << std::endl;
+// 	int i;
+// 	for (i = 0; i < numOfPorts; i++)
+// 	{
+// 		if (ports.at(i) == port)
+// 			break;
+// 	}
+// 	std::cout << "HERE, i = " << i << " numOfports = " << numOfPorts << std::endl;
+// 	if (i == numOfPorts)
+// 	{
+// 		ports.push_back(port);
+// 		numOfPorts++;
+// 	}
+// }
 
-int Server::getNumOfPorts(void)
-{
-	return this->numOfPorts;
-}
+int Server::getNumOfPorts(void) { return csrv.getNumOfPorts(); }
 
 void Server::makeSocketList()
 {
-	for (int i = 0; i < numOfPorts; i++)
+	for (size_t i = 0; i < csrv.getNumOfPorts(); i++)
 	{
-		listeningSocket newSocket(ports.at(i));
+		listeningSocket newSocket(csrv.getPort(i));
 		setnonblocking(newSocket.getServerFd());
 		listeners.push_back(newSocket);
 	}
@@ -415,5 +342,38 @@ void Server::makeSocketList()
 
 std::string Server::getRootDir()
 {
-	return this->rootDir;
+	 return this->rootDir;
+}
+
+// Server &Server::operator=(const Server &var)
+// {
+// 	if (this != &var)
+// 	{
+// 		this->servName = var.servName;
+// 		this->rootDir = var.rootDir;
+// 		this->error404Dir = var.error404Dir;
+// 		this->errorPages = var.errorPages;
+// 		this->cgiExt = var.cgiExt;
+// 		this->cgiPath = var.cgiPath;
+// 		this->client_max_body_size = var.client_max_body_size;
+// 		this->numOfPorts = var.numOfPorts;
+// 		this->ports = var.ports;
+// 		this->listeners = var.listeners;
+// 		this->directoryIndex = var.directoryIndex;
+// 	}
+// 	return (*this);
+// }
+
+void Server::print(void)
+{
+	std::cout << "server name = " << servName << std::endl;
+	std::cout << "(relative) root dir = " << rootDir << std::endl;
+	std::cout << "error dir = " << error404Dir << std::endl;
+	std::cout << "cgi path and ext  = " << cgiPath << " and " << cgiExt << std::endl;
+	std::cout << "Num of ports = " << csrv.getNumOfPorts() << std::endl;
+	std::cout << "ports are " << std::endl;
+	for (size_t i = 0; i < csrv.getNumOfPorts(); i++)
+	{
+		std::cout << csrv.getPort(i) << std::endl;
+	}
 }
