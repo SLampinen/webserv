@@ -55,9 +55,11 @@ public:
 
 	void handlePollEvent(size_t index);
 
-	void closeInactiveConnections(size_t index);
+    void closeConnections(size_t index);
 
-	void run(std::string configFile);
+    void closeInactiveConnections(size_t index);
+
+    void run(std::string configFile);
 
 	int readConfig(std::string fileName);
 
