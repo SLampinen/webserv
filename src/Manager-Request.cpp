@@ -120,30 +120,22 @@ void Manager::prepareServer(std::string file_path, std::vector<struct pollfd> fd
 void Manager::handleGet(std::string request_data, std::vector<struct pollfd> fds, int i) {
 	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
 	ConfigServer &c_server = configserverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
-	// size_t pos = request_data.find(' ') + 1;
-	// std::string filepath = request_data.substr(pos, request_data.find(' ', pos) - pos);
-	// if (filepath.find('?') != std::string::npos)
-	// 	filepath = filepath.substr(0, filepath.find('?') + 1);
-	server.log(request_data);
 	Response response = c_server.resolveRequest(REQ_GET, getFilePath(request_data));
 	server.setLocation(c_server.getMatchedLocation());
-	std::cout << "Matched location root: " << c_server.getMatchedLocation().getRootPath() << std::endl;
+	server.log(request_data);
+	//std::cout << "Matched location root: " << c_server.getMatchedLocation().getRootPath() << std::endl;
 	if (response.getType() == RES_CGI) // ! CGI
 	 	return (handleCGI(request_data, fds, i));
 	// else if (response.getType() == RES_DIR) // ! Directory
 	// 	return (handleFile());
 	// else if (response.getType() == RES_FILE) // ! File
 	// 	return (handleFile());
-	
 	std::string response_data(server.buildHTTPResponse(getFilePath(request_data).substr(c_server.getMatchedLocation()._path.size(), std::string::npos), ""));
 	send(fds[i].fd, response_data.c_str(), response_data.length(), 0);
-	return ;
-
-	throw std::runtime_error("Server returned invalid request type: " + std::to_string(response.getType()));
 }
 
 
-// Handle CGI
+// Handle CGI, prepareServer not needed since it has been run already
 void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
 	std::string response;
@@ -217,7 +209,6 @@ void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds
 void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
 	prepareServer(getFilePath(receivedData), fds, i);
-
 	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
@@ -226,7 +217,6 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 			break;
 		}
 	}
-
 	if (receivedData.find("boundary") != std::string::npos)
 	{
 		std::string path;
@@ -270,7 +260,6 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
 	prepareServer(getFilePath(receivedData), fds, i);
-
 	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
@@ -315,6 +304,7 @@ void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> 
 // OTHER
 void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
+	prepareServer(getFilePath(receivedData), fds, i);
 	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)

@@ -1,0 +1,14 @@
+# INTERNAL FILE, DO NOT MODIFY
+200 OK
+201 Created
+202 Accepted
+203 Non-Authoritative Information
+300 Multiple Choices
+400 Bad Request
+403 Forbidden
+404 Not Found
+408 Connection timeout
+413 Request Entity Too Large
+418 I'm a teapot
+500 Internal Server Error
+501 Method Not Implemented

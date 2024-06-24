@@ -22,12 +22,13 @@ private:
 	bool directoryIndex;
 	std::string indexFile;
 	ConfigServer csrv;
+	ConfigSection &def_res;
 
 	//Server(const Server &var);
 public:
 	//Server();
 	~Server();
-	Server(ConfigServer &cfg_server);
+	Server(ConfigServer &cfg_server, ConfigSection &def_res);
 	//Server& operator=(const Server &var);
 
 	void setLocation(Location &loc); // changes values to match the current requests location // ! added by rleskine

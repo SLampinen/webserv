@@ -23,6 +23,7 @@ private:
 	// std::map<int, FileTransferState> clientStates;
 	std::vector<Server> serverList;
 	std::vector<ConfigServer> configserverList;
+	ConfigSection default_responses;
 
 	std::vector<std::pair<int, size_t>> serverIndex;
 	std::vector<std::pair<int, size_t>> pids;
