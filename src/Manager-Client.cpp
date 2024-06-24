@@ -52,6 +52,33 @@ void Manager::handleClientCommunication(size_t index)
 			bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 		}
 
+				if (receivedData.find("Content-Length:") != std::string::npos && bytesReceived != -1)
+		{
+			std::string contentLength = receivedData.substr(receivedData.find("Content-Length:") + 16);
+			contentLength = contentLength.substr(0, contentLength.find("\r\n"));
+			size_t length = std::stoi(contentLength);
+			bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
+			while (receivedData.size() < length)
+			{
+				std::string rest(buffer, bytesReceived);
+				receivedData.append(rest);
+				length -= bytesReceived;
+				bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
+			}
+		}
+		if (receivedData.find("Expect:") != std::string::npos)
+		{
+			std::string response = "HTTP/1.1 413 Request Entity Too Large\r\n\r\n";
+			send(fds[index].fd, response.c_str(), response.size(), 0);
+			std::cout << "File too big" << std::endl;
+			close(fds[index].fd);
+			fds.erase(fds.begin() + index);
+			fdsTimestamps.erase(fdsTimestamps.begin() + index);
+			cgiOnGoing.erase(cgiOnGoing.begin() + index);
+			index--;
+			return;
+		}
+
 		// If cgi is ongoing, throw out previous request, start new one if necessary
 		fdsTimestamps[index] = time(NULL);
 		cgiOnGoing[index] = 0;
