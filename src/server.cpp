@@ -27,7 +27,6 @@ Server::~Server() { std::cout << "Deleting server" << std::endl; }
 // 	this->directoryIndex = var.directoryIndex;
 // }
 
-//Server::Server(ConfigServer &cfg_srv) : csrv(cfg_srv) {
 Server::Server(ConfigServer &cfg_srv) : csrv(cfg_srv) { 
 	servName = cfg_srv.getName();
 	rootDir = "";
@@ -46,79 +45,18 @@ void Server::setLocation(Location &loc) {
 	indexFile = loc.defaultIndexFile();
 }
 
-std::string Server::getServerName(void)
-{
-	return this->servName;
-}
-
-void Server::setServerName(std::string name)
-{
-	this->servName = name;
-}
-
-void Server::setRootDir(std::string dir)
-{
-	this->rootDir = dir;
-}
-
-void Server::setErrorDir(std::string dir)
-{
-	this->error404Dir = dir;
-}
-
-void Server::setCGIExt(std::string ext)
-{
-	if (this->cgiExt.empty())
-		this->cgiExt = ext;
-}
-
-void Server::setCGIPath(std::string path)
-{
-	this->cgiPath = path;
-}
-
-void Server::setClientBodySize(std::string size)
-{
-	this->client_max_body_size = std::stoi(size);
-}
-
-size_t Server::getClientBodySize(void)
-{
-	return this->client_max_body_size;
-}
-
-std::string Server::getCGIPath(void)
-{
-	return this->cgiPath;
-}
-
-std::string Server::getCGIExt(void)
-{
-	return this->cgiExt;
-}
+std::string Server::getServerName(void) { return this->servName; }
+size_t Server::getClientBodySize(void) { return this->client_max_body_size; }
+std::string Server::getCGIPath(void) { return this->cgiPath; }
+std::string Server::getCGIExt(void) { return this->cgiExt; }
 
 std::string Server::getMIMEType(std::string fileExt)
 {
-	if (fileExt.compare(".html") == 0 || fileExt.compare(".htm") == 0)
-	{
-		return "text/html";
-	}
-	else if (fileExt.compare(".txt") == 0)
-	{
-		return "text/plain";
-	}
-	else if (fileExt.compare(".jpg") == 0 || fileExt.compare(".jpeg") == 0)
-	{
-		return "image/jpeg";
-	}
-	else if (fileExt.compare(".png") == 0)
-	{
-		return "image/png";
-	}
-	else
-	{
-		return "application/octet-stream";
-	}
+	if (fileExt.compare(".html") == 0 || fileExt.compare(".htm") == 0) { return "text/html"; }
+	else if (fileExt.compare(".txt") == 0) { return "text/plain"; }
+	else if (fileExt.compare(".jpg") == 0 || fileExt.compare(".jpeg") == 0) { return "image/jpeg"; }
+	else if (fileExt.compare(".png") == 0) { return "image/png"; }
+	else { return "application/octet-stream"; }
 }
 
 std::string Server::makeStatus(int status)

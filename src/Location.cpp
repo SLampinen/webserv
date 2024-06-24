@@ -36,7 +36,7 @@ void Location::initialize() {
 
 bool Location::requestMatch(const int method, std::string const &request_path, size_t &match_size) {
 	if (methodAvailable(method) && request_path.find(_path) == 0)
-		return (match_size = _path.size(), true);
+		return (std::cout << "loc:reqMatch: " << match_size << std::endl, match_size = _path.size(), true);
 	return false;
 }
 

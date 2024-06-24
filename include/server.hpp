@@ -50,16 +50,9 @@ public:
 	int getNumOfPorts(void);
 	size_t getClientBodySize(void);
 	std::string getRootDir(void);
+	bool methodAllowed(size_t method); // 1GET 2POST 3DEL
 
 	void makeSocketList(void);
-
-	//void addPort(int port);
-	void setServerName(std::string name);
-	void setRootDir(std::string dir);
-	void setErrorDir(std::string dir);
-	void setCGIExt(std::string ext);
-	void setCGIPath(std::string path);
-	void setClientBodySize(std::string size);
 
 	void log(std::string text);
 	void print(void);

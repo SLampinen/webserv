@@ -107,6 +107,14 @@ void Manager::handleGet2(std::string receivedData, std::vector<struct pollfd> fd
 	send(fds[i].fd, response.c_str(), response.length(), 0);
 }
 
+// ! RUN BEFORE HANDLE* (except rewritten handleGet)
+void Manager::prepareServer(std::string file_path, std::vector<struct pollfd> fds, int i) {
+	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
+	ConfigServer &c_server = configserverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
+	Response response = c_server.resolveRequest(REQ_GET, file_path);
+	server.setLocation(c_server.getMatchedLocation());
+}
+
 
 // ! added by rleskine, version that works when merged with parsing
 void Manager::handleGet(std::string request_data, std::vector<struct pollfd> fds, int i) {
@@ -141,7 +149,6 @@ void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds
 	std::string response;
 	cgiOnGoing[i] = 1;
 	size_t index;
-
 	// Find the server index
 	for (index = 0; index < serverIndex.size(); index++)
 	{
@@ -209,6 +216,8 @@ void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds
 // POST
 void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
+	prepareServer(getFilePath(receivedData), fds, i);
+
 	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
@@ -260,6 +269,8 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 // DELETE
 void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
+	prepareServer(getFilePath(receivedData), fds, i);
+
 	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
@@ -275,6 +286,7 @@ void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> 
 		if (serverIndex.at(index).first == fds[i].fd)
 			break;
 	}
+	std::cout << "serverpath: " << serverList.at(serverIndex.at(index).second).getRootDir() << std::endl;
 	size_t start = receivedData.find("/");
 	start = receivedData.find("/", start + 1);
 	size_t end = receivedData.find(" ", start);
@@ -332,6 +344,7 @@ void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> f
 // Handle file upload
 void Manager::handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i)
 {
+	prepareServer(getFilePath(receivedData), fds, i);
 	std::cout << "UPLOADING" << std::endl;
 	std::cout << "i = " << i << std::endl;
 	size_t index;
@@ -346,11 +359,13 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	size_t end = receivedData.find("\"", start);
 	std::string name = receivedData.substr(start, end - start);
 
-	std::cout << name << std::endl;
+	std::cout << "UPLOAD name[" << name << "]" << std::endl;
 
 	std::ofstream theFile;
 	std::string root = serverList.at(serverIndex.at(index).second).getRootDir().append("files/");
 	name = root.append(name);
+	std::cout << "UPLOAD name[" << name << "]" << std::endl;
+
 	for (size_t tbd = 0; tbd < fdsFileNames.size(); tbd++)
 	{
 		if (fdsFileNames.at(tbd).first == i)
