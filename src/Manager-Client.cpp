@@ -52,7 +52,7 @@ void Manager::handleClientCommunication(size_t index)
 			bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 		}
 
-				if (receivedData.find("Content-Length:") != std::string::npos && bytesReceived != -1)
+		if (receivedData.find("Content-Length:") != std::string::npos && bytesReceived != -1)
 		{
 			std::string contentLength = receivedData.substr(receivedData.find("Content-Length:") + 16);
 			contentLength = contentLength.substr(0, contentLength.find("\r\n"));
@@ -87,45 +87,51 @@ void Manager::handleClientCommunication(size_t index)
 			if (index == pids.at(k).second)
 			{
 				kill(pids.at(k).first, 9);
-				//gets rid of the temp file that child made
+				// gets rid of the temp file that child made
 				std::string name = serverList.at(serverIndex.at(k).second).getRootDir();
 				name.append("temp");
 				name.append(std::to_string(index));
 				unlink(name.c_str());
 				pids.erase(pids.begin() + k);
-				
 			}
 		}
 		// if (!clientStates[fds[index].fd].transferInProgress)
 		// {
-			// clientStates[fds[index].fd].transferInProgress = true;
-			if (receivedData.find("GET") != std::string::npos)
-			{
-				std::cout << "GETTING" << std::endl;
-				handleGet(receivedData, fds, index);
-			}
-			else if (receivedData.find("POST") != std::string::npos)
-			{
-				std::cout << "POSTING" << std::endl;
-				handlePost(receivedData, fds, index);
-			}
-			else if (receivedData.find("DELETE") != std::string::npos)
-			{
-				std::cout << "DELETING" << std::endl;
-				handleDelete(receivedData, fds, index);
-			}
-			else if (receivedData.find("HEAD") != std::string::npos || receivedData.find("PUT") != std::string::npos ||
-			receivedData.find("CONNECT") != std::string::npos || receivedData.find("OPTIONS") != std::string::npos ||
-			receivedData.find("TRACE") != std::string::npos || receivedData.find("PATCH") != std::string::npos)
-			{
-				std::cout << "OTHER METHOD" << std::endl;
-				handleOther(receivedData, fds, index);
-			}
-			else
-			{
-				std::cout << "HANDLING CONTINUE" << std::endl;
-				handleContinue(receivedData, index);
-			}
+		// clientStates[fds[index].fd].transferInProgress = true;
+		if (receivedData.find("GET") != std::string::npos)
+		{
+			std::cout << "GETTING" << std::endl;
+			handleGet(receivedData, fds, index);
+		}
+		else if (receivedData.find("POST") != std::string::npos)
+		{
+			std::cout << "POSTING" << std::endl;
+			handlePost(receivedData, fds, index);
+		}
+		else if (receivedData.find("DELETE") != std::string::npos)
+		{
+			std::cout << "DELETING" << std::endl;
+			handleDelete(receivedData, fds, index);
+		}
+		else if (receivedData.find("HEAD") != std::string::npos || receivedData.find("PUT") != std::string::npos ||
+				 receivedData.find("CONNECT") != std::string::npos || receivedData.find("OPTIONS") != std::string::npos ||
+				 receivedData.find("TRACE") != std::string::npos || receivedData.find("PATCH") != std::string::npos)
+		{
+			std::cout << "OTHER METHOD" << std::endl;
+			handleOther(receivedData, fds, index);
+		}
+		else
+		{
+			std::string response = "HTTP/1.1 400 Bad Request\r\n\r\n";
+			send(fds[index].fd, response.c_str(), response.size(), 0);
+			std::cout << "Bad Request" << std::endl;
+			close(fds[index].fd);
+			fds.erase(fds.begin() + index);
+			fdsTimestamps.erase(fdsTimestamps.begin() + index);
+			cgiOnGoing.erase(cgiOnGoing.begin() + index);
+			index--;
+			return;
+		}
 		// }
 		// else
 		// {
@@ -137,6 +143,5 @@ void Manager::handleClientCommunication(size_t index)
 		// 		handleTimeout(index);
 		// 	}
 		// }
-		
 	}
 }
