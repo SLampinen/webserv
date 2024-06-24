@@ -1,75 +1,75 @@
 #include "manager.hpp"
 
 // GET
-void Manager::handleGet(std::string receivedData, std::vector<struct pollfd> fds, int i)
-{
-	std::string response;
-	size_t start = receivedData.find('/');
-	size_t end = receivedData.find(' ', start);
-	std::string file = receivedData.substr(start + 1, end - start - 1);
-	std::string fileExt = ".html";
-	std::string fileName;
+// void Manager::handleGet(std::string receivedData, std::vector<struct pollfd> fds, int i)
+// {
+// 	std::string response;
+// 	size_t start = receivedData.find('/');
+// 	size_t end = receivedData.find(' ', start);
+// 	std::string file = receivedData.substr(start + 1, end - start - 1);
+// 	std::string fileExt = ".html";
+// 	std::string fileName;
 
-	// Extract file name and extension
-	if (file.find('.') != std::string::npos)
-	{
-		fileExt = file.substr(file.find('.'));
-		fileName = file.substr(0, file.find('.'));
-	}
-	else
-	{
-		fileName = file;
-	}
+// 	// Extract file name and extension
+// 	if (file.find('.') != std::string::npos)
+// 	{
+// 		fileExt = file.substr(file.find('.'));
+// 		fileName = file.substr(0, file.find('.'));
+// 	}
+// 	else
+// 	{
+// 		fileName = file;
+// 	}
 
-	std::cout << "File ext = " << fileExt << std::endl;
+// 	std::cout << "File ext = " << fileExt << std::endl;
 
-	// Handle query parameters
-	if (fileExt.find("?") != std::string::npos)
-	{
-		end = fileExt.find("?");
-		fileExt = fileExt.substr(0, end);
-	}
+// 	// Handle query parameters
+// 	if (fileExt.find("?") != std::string::npos)
+// 	{
+// 		end = fileExt.find("?");
+// 		fileExt = fileExt.substr(0, end);
+// 	}
 
-	size_t index;
+// 	size_t index;
 
-	// Find the server index
-	for (index = 0; index < serverIndex.size(); index++)
-	{
-		if (serverIndex.at(index).first == fds[i].fd)
-		{
-			break;
-		}
-	}
+// 	// Find the server index
+// 	for (index = 0; index < serverIndex.size(); index++)
+// 	{
+// 		if (serverIndex.at(index).first == fds[i].fd)
+// 		{
+// 			break;
+// 		}
+// 	}
 
-	std::cout << "HERE!" << std::endl;
-	std::cout << "File ext = " << fileExt << " and cgi ext = " << serverList.at(serverIndex.at(index).second).getCGIExt() << std::endl;
-	std::cout << serverList.size() << " and " << serverIndex.size() << " and " << index << std::endl;
+// 	std::cout << "HERE!" << std::endl;
+// 	std::cout << "File ext = " << fileExt << " and cgi ext = " << serverList.at(serverIndex.at(index).second).getCGIExt() << std::endl;
+// 	std::cout << serverList.size() << " and " << serverIndex.size() << " and " << index << std::endl;
 
-	// Check if the file extension matches the CGI extension
-	if (fileExt.compare(serverList.at(serverIndex.at(index).second).getCGIExt()) == 0)
-	{
-		std::cout << "starting CGI" << std::endl;
-		serverList.at(serverIndex.at(index).second).log(receivedData);
-		handleCGI(receivedData, fds, i);
-	}
-	else
-	{
-		// for debugging
-		std::cout << "here, making up a response, i = " << i << std::endl;
-		serverList.at(serverIndex.at(index).second).log(receivedData);
-		response = serverList.at(serverIndex.at(index).second).buildHTTPResponse(fileName, fileExt);
+// 	// Check if the file extension matches the CGI extension
+// 	if (fileExt.compare(serverList.at(serverIndex.at(index).second).getCGIExt()) == 0)
+// 	{
+// 		std::cout << "starting CGI" << std::endl;
+// 		serverList.at(serverIndex.at(index).second).log(receivedData);
+// 		handleCGI(receivedData, fds, i);
+// 	}
+// 	else
+// 	{
+// 		// for debugging
+// 		std::cout << "here, making up a response, i = " << i << std::endl;
+// 		serverList.at(serverIndex.at(index).second).log(receivedData);
+// 		response = serverList.at(serverIndex.at(index).second).buildHTTPResponse(fileName, fileExt);
 
-		if (serverList.at(serverIndex.at(index).second).getClientBodySize() != 0 && serverList.at(serverIndex.at(index).second).getClientBodySize() < response.length())
-		{
-			std::cout << "response too large" << std::endl;
-			std::string body = "ERROR 413 Request Entity Too Large";
-			response = serverList.at(serverIndex.at(index).second).makeHeader(413, body.size());
-			response.append(body);
-		}
+// 		if (serverList.at(serverIndex.at(index).second).getClientBodySize() != 0 && serverList.at(serverIndex.at(index).second).getClientBodySize() < response.length())
+// 		{
+// 			std::cout << "response too large" << std::endl;
+// 			std::string body = "ERROR 413 Request Entity Too Large";
+// 			response = serverList.at(serverIndex.at(index).second).makeHeader(413, body.size());
+// 			response.append(body);
+// 		}
 
-		send(fds[i].fd, response.c_str(), response.length(), 0);
-	}
-}
+// 		send(fds[i].fd, response.c_str(), response.length(), 0);
+// 	}
+// }
 
 // ! added by rleskine
 size_t getServer(std::vector<std::pair<int, size_t> > const &server_index, int fd) {
@@ -84,24 +84,21 @@ size_t getServer(std::vector<std::pair<int, size_t> > const &server_index, int f
 
 // ! added by rleskine
 std::string getFilePath(std::string const &header) {
-	size_t pos = header.find(' ') + 2; // ! + 1 if leading slash
+	size_t pos = header.find(' ') + 1; // ! + 1 if leading slash
 	std::string filepath = header.substr(pos, header.find(' ', pos) - pos);
 	if (filepath.find('?') != std::string::npos)
-		filepath = filepath.substr(0, filepath.find('?') + 1);
+		filepath = filepath.substr(0, filepath.find('?'));
 	return filepath;
 }
 
 // ! added by rleskine, works with chunk-branch
 void Manager::handleGet2(std::string receivedData, std::vector<struct pollfd> fds, int i) {
-	//size_t pos = receivedData.find(' ') + 2; // ! + 1 if leading slash
-	//std::string filepath = receivedData.substr(pos, receivedData.find(' ', pos) - pos);
-	//if (filepath.find('?') != std::string::npos)
-	//	filepath = filepath.substr(0, filepath.find('?') + 1);
 	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
 	server.log(receivedData);
-	if (getFilePath(receivedData).find(server.getCGIExt()) != std::string::npos)
+	std::string filepath(getFilePath(receivedData.substr(1, std::string::npos)));
+	if (!server.getCGIExt().empty() && filepath.find(server.getCGIExt()) != std::string::npos)
 		return (handleCGI(receivedData, fds, i));
-	std::string response = server.buildHTTPResponse(getFilePath(receivedData), "");
+	std::string response = server.buildHTTPResponse(filepath, "");
 	if (server.getClientBodySize() && server.getClientBodySize() < response.size()) {
 		std::string const body("ERROR 413 Request Entity Too Large");
 		response = server.makeHeader(413, body.size());
@@ -112,22 +109,30 @@ void Manager::handleGet2(std::string receivedData, std::vector<struct pollfd> fd
 
 
 // ! added by rleskine, version that works when merged with parsing
-// void Manager::handleGet(std::string request_data, std::vector<struct pollfd> fds, int i) {
-// 	size_t pos = request_data.find(' ') + 1;
-// 	std::string filepath = request_data.substr(pos, request_data.find(' ', pos) - pos);
-// 	if (filepath.find('?') != std::string::npos)
-// 		filepath = filepath.substr(0, filepath.find('?') + 1);
-// 	ConfigServerServer &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
-// 	server.log(request_data);
-// 	Response response = server.resolveRequest(REQ_GET, filepath);
-// 	if (response.getType() == RES_CGI) // ! CGI
-// 		return (handleCGI());
-// 	else if (response.getType() == RES_DIR) // ! Directory
-// 		return (handleDir());
-// 	else if (response.getType() == RES_FILE) // ! File
-// 		return (handleFile());
-// 	throw std::runtime_error("Server returned invalid request type: " + std::to_string(response.getType()));
-// }
+void Manager::handleGet(std::string request_data, std::vector<struct pollfd> fds, int i) {
+	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
+	ConfigServer &c_server = configserverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
+	// size_t pos = request_data.find(' ') + 1;
+	// std::string filepath = request_data.substr(pos, request_data.find(' ', pos) - pos);
+	// if (filepath.find('?') != std::string::npos)
+	// 	filepath = filepath.substr(0, filepath.find('?') + 1);
+	server.log(request_data);
+	Response response = c_server.resolveRequest(REQ_GET, getFilePath(request_data));
+	server.setLocation(c_server.getMatchedLocation());
+	std::cout << "Matched location root: " << c_server.getMatchedLocation().getRootPath() << std::endl;
+	if (response.getType() == RES_CGI) // ! CGI
+	 	return (handleCGI(request_data, fds, i));
+	// else if (response.getType() == RES_DIR) // ! Directory
+	// 	return (handleFile());
+	// else if (response.getType() == RES_FILE) // ! File
+	// 	return (handleFile());
+	
+	std::string response_data(server.buildHTTPResponse(getFilePath(request_data).substr(c_server.getMatchedLocation()._path.size(), std::string::npos), ""));
+	send(fds[i].fd, response_data.c_str(), response_data.length(), 0);
+	return ;
+
+	throw std::runtime_error("Server returned invalid request type: " + std::to_string(response.getType()));
+}
 
 
 // Handle CGI

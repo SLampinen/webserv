@@ -11,7 +11,7 @@
 class Server {
 private:
 	int numOfPorts;
-	std::vector<int> ports;
+	//std::vector<int> ports;
 	std::string servName;
 	std::string rootDir;
 	std::string error404Dir;
@@ -21,14 +21,14 @@ private:
 	size_t client_max_body_size;
 	bool directoryIndex;
 	std::string indexFile;
-	ConfigServer &csrv;
+	ConfigServer csrv;
 
 	//Server(const Server &var);
 public:
 	//Server();
 	~Server();
 	Server(ConfigServer &cfg_server);
-	Server& operator=(const Server &var);
+	//Server& operator=(const Server &var);
 
 	void setLocation(Location &loc); // changes values to match the current requests location // ! added by rleskine
 
@@ -53,7 +53,7 @@ public:
 
 	void makeSocketList(void);
 
-	void addPort(int port);
+	//void addPort(int port);
 	void setServerName(std::string name);
 	void setRootDir(std::string dir);
 	void setErrorDir(std::string dir);

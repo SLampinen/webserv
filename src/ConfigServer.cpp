@@ -88,7 +88,9 @@ Response ConfigServer::resolveRequest(const Request &request) {
 
 bool ConfigServer::resolveLocation(int const method, std::string const &request_path, size_t &index) {
 	size_t match_size = 0, new_match_size = 0;
+	std::cout << "locations size: " << _locations.size() << " ";
 	for (size_t i = 0; i < _locations.size(); i++) {
+		std::cout << "matching locations: [" << request_path << "][" << _locations.at(i)._path << "]" << std::endl;
 		if (_locations.at(i).requestMatch(method, request_path, new_match_size) && new_match_size > match_size) {
 			match_size = new_match_size;
 			index = i;
@@ -119,10 +121,15 @@ std::string ConfigServer::getErrorPage(const size_t page_num) {
 	}
 }
 
-std::string ConfigServer::getName() const { return _server_names.at(0); }
+std::string ConfigServer::getName() const { 
+	if (_server_names.empty()) return "";
+	return _server_names.at(0); 
+	}
 size_t ConfigServer::getSize() const { return _max_client_body_size; }
-size_t ConfigServer::getNumOfPorts() const { return _ports.size(); }
-//Location &ConfigServer::getMatchedLocation() const { return _locations.at(_last_matched_location); }
+size_t ConfigServer::getNumOfPorts() const { //std::cout << "BREAK getNOP [" << std::to_string(_ports.size()) << "]" << std::endl; 
+	return _ports.size(); }
+Location &ConfigServer::getMatchedLocation() { return _locations.at(_last_matched_location); }
+int ConfigServer::getPort(size_t index) { return _ports.at(index); }
 
 void ConfigServer::printData() {
 	std::cout << "\e[0;32mConfigServer.printData() : Ports \e[0;92m";

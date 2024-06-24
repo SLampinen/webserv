@@ -1,25 +1,32 @@
 #include "manager.hpp"
 
 // Read config
-int Manager::readConfig(std::string config_file)
+int Manager::readConfig(ConfigParser &config_parser)
 {
 	//std::fstream configFile;
 	//int start, end;
 	//std::string wip;
 
-	std::cout << "opening config file: " << config_file << std::endl;
-	ConfigParser config_parser(config_file);
+	//ConfigParser config_parser(config_file);
 
 	if (!config_parser.startParse())
-		return 0;
-	std::vector<ConfigServer> configServerList;
+		return (std::cout << "READCONFIG FAILED" << std::endl, 0);
+	else
+		std::cout << "STARTPARSE RETURNED TRUE" << std::endl;
 	while (!config_parser.endParse()) {
-		configServerList.push_back(config_parser.getServer());
-		serverList.push_back(Server(configServerList.back()));
+		//Server server(config_parser.getServer());
+		//serverList.push_back(Server(config_parser.getServer()));
+
+		configserverList.push_back(config_parser.getServer());
+		std::cout << "PRINT FROM READCONFIG";
+		configserverList.back().printData();
+		serverList.push_back(Server(configserverList.back()));
+		serverList.back().print();
+		serverList.back().makeSocketList();
+
+		std::cout << "ADDING SERVER WITH " << serverList.back().getNumOfPorts() << " ports" << std::endl;
 	}
 	return 1;
-
-
 
 	// configFile.open(fileName);
 	// if (!configFile.good())

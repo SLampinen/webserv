@@ -32,6 +32,7 @@ class Location : public ConfigSection {
 		std::string getLastCGIPath();
 		bool directoryIndexAllowed();
 		std::string defaultIndexFile();
+		std::string getRootPath();
 		
 		const std::string _path;
 

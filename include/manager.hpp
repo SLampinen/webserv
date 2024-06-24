@@ -22,8 +22,9 @@ private:
 	// };
 	// std::map<int, FileTransferState> clientStates;
 	std::vector<Server> serverList;
-	std::vector<std::pair<int, size_t>> serverIndex;
+	std::vector<ConfigServer> configserverList;
 
+	std::vector<std::pair<int, size_t>> serverIndex;
 	std::vector<std::pair<int, size_t>> pids;
 
 	std::vector<struct pollfd> fds;
@@ -35,8 +36,8 @@ private:
 public:
 	Manager();
 	~Manager();
-	Manager(const Manager &var);
-	Manager &operator=(const Manager &var);
+	//Manager(const Manager &var);
+	//Manager &operator=(const Manager &var);
 
 	void setupPollingforServers();
 
@@ -58,7 +59,7 @@ public:
 
 	void run(std::string configFile);
 
-	int readConfig(std::string fileName);
+	int readConfig(ConfigParser &config_parser);
 
 	void handleGet(std::string receivedData, std::vector<struct pollfd> fds, int i);
 	void handleGet2(std::string receivedData, std::vector<struct pollfd> fds, int i);

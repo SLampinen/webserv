@@ -75,7 +75,7 @@ void Manager::handleClientCommunication(size_t index)
 			if (receivedData.find("GET") != std::string::npos)
 			{
 				std::cout << "GETTING" << std::endl;
-				handleGet2(receivedData, fds, index);
+				handleGet(receivedData, fds, index);
 			}
 			else if (receivedData.find("POST") != std::string::npos)
 			{

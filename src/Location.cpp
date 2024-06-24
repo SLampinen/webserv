@@ -64,6 +64,7 @@ std::string Location::getLastCGISuffix() { return _matched_cgi.first; }
 std::string Location::getLastCGIPath() { return _matched_cgi.second; }
 bool Location::directoryIndexAllowed() { return _dir_list; }
 std::string Location::defaultIndexFile() { return _index_file; }
+std::string Location::getRootPath() { return _rootpath; }
 
 bool Location::methodAvailable(const int method) {
 	if (method != REQ_GET && method != REQ_POST && method != REQ_DEL)

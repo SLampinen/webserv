@@ -1,5 +1,5 @@
-#ifndef WS_CONFIGConfigSERVER_HPP
-# define WS_CONFIGConfigSERVER_HPP
+#ifndef WS_CONFIGSERVER_HPP
+# define WS_CONFIGSERVER_HPP
 
 #include <cstring>
 #include <vector>
@@ -12,6 +12,10 @@
 class ConfigServer : public ConfigSection {
 	public:
 		ConfigServer();
+		~ConfigServer() { 
+			//std::cout << "ConfigServer [" << getName() << "] destroyed" << std::endl;
+			//printData();
+		}
 
 		void initialize();
 		bool addConfigServerName(const std::string name);
@@ -30,7 +34,8 @@ class ConfigServer : public ConfigSection {
 		std::string getName() const;
 		size_t getSize() const;
 		size_t getNumOfPorts() const;
-		Location &getMatchedLocation() const;
+		int getPort(size_t index);
+		Location &getMatchedLocation();
 
 	private:
 		size_t _max_client_body_size;

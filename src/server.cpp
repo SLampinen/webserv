@@ -10,10 +10,7 @@
 // 	this->directoryIndex = true;
 // }
 
-Server::~Server()
-{
-	std::cout << "Deleting server" << std::endl;
-}
+Server::~Server() { std::cout << "Deleting server" << std::endl; }
 
 // Server::Server(const Server &var)
 // {
@@ -41,7 +38,8 @@ Server::Server(ConfigServer &cfg_srv) : csrv(cfg_srv) {
 }
 
 void Server::setLocation(Location &loc) {
-	rootDir = loc._path;
+	rootDir = loc.getRootPath();
+	//if (rootDir.back() == '/') rootDir = rootDir.substr(0, rootDir.size() - 1);
 	cgiExt = loc.getLastCGISuffix();
 	cgiPath = loc.getLastCGIPath();
 	directoryIndex = loc.directoryIndexAllowed();
@@ -236,7 +234,8 @@ std::string Server::makeStatus5xx(int status)
 // ! merge version by rleskine TODO: csrv missing, update getErrorPage in ConfigServer
 std::string Server::makeHeader(int responseStatus, int responseSize) {
 	std::string header = "HTTP/1.1 " + std::to_string(responseStatus) + " ";
-	std::string error_page; //std::string error_page = csrv.getErrorPage(responseStatus);
+	//std::string error_page;
+	std::string error_page = csrv.getErrorPage(responseStatus);
 	if (!error_page.empty())
 		header += csrv.getErrorPage(responseStatus); // ! update getErrorpage to fetch file
 	else
@@ -375,34 +374,31 @@ void Server::log(std::string text)
 	logfile.close();
 }
 
-void Server::addPort(int port)
-{
-	std::cout << "HERE port = " << port << std::endl;
-	int i;
-	for (i = 0; i < numOfPorts; i++)
-	{
-		if (ports.at(i) == port)
-			break;
-	}
-	std::cout << "HERE, i = " << i << " numOfports = " << numOfPorts << std::endl;
-	if (i == numOfPorts)
-	{
-		ports.push_back(port);
-		numOfPorts++;
-	}
-}
+// void addPort(int port)
+// {
+// 	std::cout << "HERE port = " << port << std::endl;
+// 	int i;
+// 	for (i = 0; i < numOfPorts; i++)
+// 	{
+// 		if (ports.at(i) == port)
+// 			break;
+// 	}
+// 	std::cout << "HERE, i = " << i << " numOfports = " << numOfPorts << std::endl;
+// 	if (i == numOfPorts)
+// 	{
+// 		ports.push_back(port);
+// 		numOfPorts++;
+// 	}
+// }
 
-int Server::getNumOfPorts(void)
-{
-	return this->numOfPorts;
-}
+int Server::getNumOfPorts(void) { return csrv.getNumOfPorts(); }
 
 
 void Server::makeSocketList()
 {
-	for (int i = 0; i < numOfPorts; i++)
+	for (size_t i = 0; i < csrv.getNumOfPorts(); i++)
 	{
-		listeningSocket newSocket(ports.at(i));
+		listeningSocket newSocket(csrv.getPort(i));
 		setnonblocking(newSocket.getServerFd());
 		listeners.push_back(newSocket);
 	}
@@ -413,24 +409,24 @@ std::string Server::getRootDir()
 	 return this->rootDir;
 }
 
-Server &Server::operator=(const Server &var)
-{
-	if (this != &var)
-	{
-		this->servName = var.servName;
-		this->rootDir = var.rootDir;
-		this->error404Dir = var.error404Dir;
-		this->errorPages = var.errorPages;
-		this->cgiExt = var.cgiExt;
-		this->cgiPath = var.cgiPath;
-		this->client_max_body_size = var.client_max_body_size;
-		this->numOfPorts = var.numOfPorts;
-		this->ports = var.ports;
-		this->listeners = var.listeners;
-		this->directoryIndex = var.directoryIndex;
-	}
-	return (*this);
-}
+// Server &Server::operator=(const Server &var)
+// {
+// 	if (this != &var)
+// 	{
+// 		this->servName = var.servName;
+// 		this->rootDir = var.rootDir;
+// 		this->error404Dir = var.error404Dir;
+// 		this->errorPages = var.errorPages;
+// 		this->cgiExt = var.cgiExt;
+// 		this->cgiPath = var.cgiPath;
+// 		this->client_max_body_size = var.client_max_body_size;
+// 		this->numOfPorts = var.numOfPorts;
+// 		this->ports = var.ports;
+// 		this->listeners = var.listeners;
+// 		this->directoryIndex = var.directoryIndex;
+// 	}
+// 	return (*this);
+// }
 
 void Server::print(void)
 {
@@ -438,10 +434,10 @@ void Server::print(void)
 	std::cout << "(relative) root dir = " << rootDir << std::endl;
 	std::cout << "error dir = " << error404Dir << std::endl;
 	std::cout << "cgi path and ext  = " << cgiPath << " and " << cgiExt << std::endl;
-	std::cout << "Num of ports = " << numOfPorts << std::endl;
+	std::cout << "Num of ports = " << csrv.getNumOfPorts() << std::endl;
 	std::cout << "ports are " << std::endl;
-	for (int i = 0; i < numOfPorts; i++)
+	for (size_t i = 0; i < csrv.getNumOfPorts(); i++)
 	{
-		std::cout << ports.at(i) << std::endl;
+		std::cout << csrv.getPort(i) << std::endl;
 	}
 }
