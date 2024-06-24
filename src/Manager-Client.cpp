@@ -1,17 +1,20 @@
 #include "manager.hpp"
 
+void Manager::closeConnections(size_t index, std::string message)
+{
+	std::cout << message << std::endl;
+	close(fds[index].fd);
+	fds.erase(fds.begin() + index);
+	fdsTimestamps.erase(fdsTimestamps.begin() + index);
+	cgiOnGoing.erase(cgiOnGoing.begin() + index);
+	index--;
+}
+
 // Close inactive connections
 void Manager::closeInactiveConnections(size_t index)
 {
 	if (time(NULL) - fdsTimestamps[index] > CONNECTION_TIMEOUT)
-	{
-		std::cout << "Closing connection due to inactivity" << std::endl;
-		close(fds[index].fd);
-		fds.erase(fds.begin() + index);
-		fdsTimestamps.erase(fdsTimestamps.begin() + index);
-		cgiOnGoing.erase(cgiOnGoing.begin() + index);
-		index--;
-	}
+		closeConnections(index, "Connection closed due to inactivity");
 }
 
 void Manager::handleClientCommunication(size_t index)
@@ -20,12 +23,7 @@ void Manager::handleClientCommunication(size_t index)
 	int bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 	if (bytesReceived < 0)
 	{
-		std::cerr << "Recv error: " << strerror(errno) << std::endl;
-		close(fds[index].fd);
-		fds.erase(fds.begin() + index);
-		fdsTimestamps.erase(fdsTimestamps.begin() + index);
-		cgiOnGoing.erase(cgiOnGoing.begin() + index);
-		index--; // Adjust index after erasing
+		closeConnections(index, "Recv error: " + std::string(strerror(errno)));
 		return;
 	}
 	else if (bytesReceived == 0)
@@ -122,6 +120,7 @@ void Manager::handleClientCommunication(size_t index)
 		}
 		else
 		{
+
 			std::string response = "HTTP/1.1 400 Bad Request\r\n\r\n";
 			send(fds[index].fd, response.c_str(), response.size(), 0);
 			std::cout << "Bad Request" << std::endl;
