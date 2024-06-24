@@ -82,19 +82,21 @@ std::string Server::makeHeader(int responseStatus, int responseSize) {
 	std::cout << "makeHeader called with " << std::to_string(responseStatus) << " " << std::to_string(responseSize) << std::endl;
 	std::string header = "HTTP/1.1 " + std::to_string(responseStatus) + " ";
 	std::string error_page = csrv.getErrorPage(responseStatus);
-	if (!error_page.empty() && error_page.find('.') != std::string::npos && responseStatus == 404) {
-		// enable reading error file for only 404, expects a dot in filename if file
+	if (!error_page.empty()) {
 		std::ifstream error_file(error_page);
-		if (error_file)
-			std::getline(error_file, error_page);
-		else
+		if (!error_file)
 			error_page = "Opening error file [" + error_page + "] failed!";
-		error_file.close();
+		else {
+			std::getline(error_file, error_page, '\0');
+			error_file.close();
+		}
 	}
-	else if (error_page.empty())
-		error_page = def_res.getIndexArg(std::to_string(responseStatus), 0);
-	header += error_page;
+	header += def_res.getIndexArg(std::to_string(responseStatus), 0);
+	if (responseSize == 0 && !error_page.empty())
+		responseSize = error_page.size();
 	header += "\r\nContent-Length: " + std::to_string(responseSize) + "\r\n\r\n";
+	if (!error_page.empty())
+		header += error_page;
 	return header;
 }
 
