@@ -49,7 +49,7 @@ bool Location::requestMatch(const Request &request, std::string &filepath) {
 std::string Location::makeRootPath(std::string const &request_path) {
 	if (!_index_file.empty() && request_path.back() == '/')
 		return (_rootpath + request_path.substr(_path.size(), std::string::npos) + _index_file);
-	return (_rootpath + request_path.substr(_path.size() - 1, std::string::npos));
+	return (_rootpath + request_path.substr(_path.size(), std::string::npos));
 }
 
 bool Location::checkCGI(std::string const &request_path, std::string &cgi_path) {
