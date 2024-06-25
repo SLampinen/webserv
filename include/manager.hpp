@@ -62,9 +62,9 @@ public:
 
 	int readConfig(ConfigParser &config_parser);
 
-	void prepareServer(std::string file_path, std::vector<struct pollfd> fds, int i);
+	Server &prepareServer(std::string file_path, std::vector<struct pollfd> fds, int i, Response &response);
+	bool prepareFailure(int code, std::vector<struct pollfd> fds, int i);
 	void handleGet(std::string receivedData, std::vector<struct pollfd> fds, int i);
-	void handleGet2(std::string receivedData, std::vector<struct pollfd> fds, int i);
 	void handlePost(std::string receivedData, std::vector<struct pollfd> fds, int i);
 	void handleDelete(std::string receivedData, std::vector<struct pollfd> fds, int i);
 	void handleOther(std::string receivedData, std::vector<struct pollfd> fds, int i);

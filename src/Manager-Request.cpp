@@ -82,6 +82,22 @@ size_t getServer(std::vector<std::pair<int, size_t> > const &server_index, int f
 	return index;
 }
 
+// // ! added by rleskine, works with chunk-branch
+// void Manager::handleGet2(std::string receivedData, std::vector<struct pollfd> fds, int i) {
+// 	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
+// 	server.log(receivedData);
+// 	std::string filepath(getFilePath(receivedData.substr(1, std::string::npos)));
+// 	if (!server.getCGIExt().empty() && filepath.find(server.getCGIExt()) != std::string::npos)
+// 		return (handleCGI(receivedData, fds, i));
+// 	std::string response = server.buildHTTPResponse(filepath, "");
+// 	if (server.getClientBodySize() && server.getClientBodySize() < response.size()) {
+// 		std::string const body("ERROR 413 Request Entity Too Large");
+// 		response = server.makeHeader(413, body.size());
+// 		response.append(body);
+// 	}
+// 	send(fds[i].fd, response.c_str(), response.length(), 0);
+// }
+
 // ! added by rleskine
 std::string getFilePath(std::string const &header) {
 	size_t pos = header.find(' ') + 1; // ! + 1 if leading slash
@@ -91,49 +107,64 @@ std::string getFilePath(std::string const &header) {
 	return filepath;
 }
 
-// ! added by rleskine, works with chunk-branch
-void Manager::handleGet2(std::string receivedData, std::vector<struct pollfd> fds, int i) {
-	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
-	server.log(receivedData);
-	std::string filepath(getFilePath(receivedData.substr(1, std::string::npos)));
-	if (!server.getCGIExt().empty() && filepath.find(server.getCGIExt()) != std::string::npos)
-		return (handleCGI(receivedData, fds, i));
-	std::string response = server.buildHTTPResponse(filepath, "");
-	if (server.getClientBodySize() && server.getClientBodySize() < response.size()) {
-		std::string const body("ERROR 413 Request Entity Too Large");
-		response = server.makeHeader(413, body.size());
-		response.append(body);
-	}
-	send(fds[i].fd, response.c_str(), response.length(), 0);
-}
-
 // ! RUN BEFORE HANDLE* (except rewritten handleGet)
-void Manager::prepareServer(std::string file_path, std::vector<struct pollfd> fds, int i) {
+Server &Manager::prepareServer(std::string file_path, std::vector<struct pollfd> fds, int i, Response &response) {
 	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
 	ConfigServer &c_server = configserverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
-	Response response = c_server.resolveRequest(REQ_GET, file_path);
-	server.setLocation(c_server.getMatchedLocation());
+	response = c_server.resolveRequest(REQ_GET, file_path);
+	if (c_server.isThereLocationMatch()) 
+		server.setLocation(c_server.getMatchedLocation());
+	else {
+		Location emptyloc("");
+		server.setLocation(emptyloc);
+	}
+	std::cout << "prepServer[" << response.getType() << "][" << response.getPath() << "]" << std::endl;
+	return (server);
 }
 
+// ! RUN AFTER prepareServer TO HANDLE LOCATION NOT MATCHING
+bool Manager::prepareFailure(int code, std::vector<struct pollfd> fds, int i) {
+	std::cout << "\e[0;36mPREPFAIL CALLED [" << code << "]\e[0m" << std::endl;
+	if (code != 404 && code != 405)
+		return false;
+	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
+	std::string response_data(server.makeHeader(code, 0));
+	return (send(fds[i].fd, response_data.c_str(), response_data.length(), 0), true);
+}
 
 // ! added by rleskine, version that works when merged with parsing
+// void Manager::handleGet(std::string request_data, std::vector<struct pollfd> fds, int i) {
+// 	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
+// 	ConfigServer &c_server = configserverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
+// 	Response response = c_server.resolveRequest(REQ_GET, getFilePath(request_data));
+// 	server.setLocation(c_server.getMatchedLocation());
+// 	server.log(request_data);
+// 	if (prepareFailure(response.getType(), fds, i)) return;
+// 	//std::cout << "Matched location root: " << c_server.getMatchedLocation().getRootPath() << std::endl;
+// 	if (response.getType() == RES_CGI) // ! CGI
+// 	 	return (handleCGI(request_data, fds, i));
+// 	// else if (response.getType() == RES_DIR) // ! Directory
+// 	// 	return (handleFile());
+// 	// else if (response.getType() == RES_FILE) // ! File
+// 	// 	return (handleFile());
+// 	std::string response_data(server.buildHTTPResponse(getFilePath(request_data).substr(c_server.getMatchedLocation()._path.size(), std::string::npos), ""));
+// 	send(fds[i].fd, response_data.c_str(), response_data.length(), 0);
+// }
+
+// ! final(?) rewritten version to work with prepareServer and handle non-location matching 404 and 405
 void Manager::handleGet(std::string request_data, std::vector<struct pollfd> fds, int i) {
-	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
-	ConfigServer &c_server = configserverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
-	Response response = c_server.resolveRequest(REQ_GET, getFilePath(request_data));
-	server.setLocation(c_server.getMatchedLocation());
-	server.log(request_data);
-	//std::cout << "Matched location root: " << c_server.getMatchedLocation().getRootPath() << std::endl;
-	if (response.getType() == RES_CGI) // ! CGI
-	 	return (handleCGI(request_data, fds, i));
-	// else if (response.getType() == RES_DIR) // ! Directory
-	// 	return (handleFile());
-	// else if (response.getType() == RES_FILE) // ! File
-	// 	return (handleFile());
-	std::string response_data(server.buildHTTPResponse(getFilePath(request_data).substr(c_server.getMatchedLocation()._path.size(), std::string::npos), ""));
+	Response response;
+	Server &server = prepareServer(getFilePath(request_data), fds, i, response);
+	if (prepareFailure(response.getType(), fds, i)) return;
+	if (response.getType() == RES_CGI)
+		return (handleCGI(request_data, fds, i));
+	//std::string s = getFilePath(request_data).substr(server.getRootDir().size(), std::string::npos);
+	std::cout << "BREAK: rootdir: " << server.getRootDir() << " fpath: " << getFilePath(request_data) << std::endl;
+	std::cout << "B2 :res.path" << response.getPath() << std::endl;
+	//std::string response_data(server.buildHTTPResponse(getFilePath(request_data).substr(server.getRootDir().size(), std::string::npos), ""));
+	std::string response_data(server.buildHTTPResponse(response.getPath().substr(server.getRootDir().size(), std::string::npos), ""));
 	send(fds[i].fd, response_data.c_str(), response_data.length(), 0);
 }
-
 
 // Handle CGI, prepareServer not needed since it has been run already
 void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds, int i)
@@ -208,7 +239,9 @@ void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds
 // POST
 void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
-	prepareServer(getFilePath(receivedData), fds, i);
+	Response response;
+	Server &server = prepareServer(getFilePath(receivedData), fds, i, response); (void)server;
+	if (prepareFailure(response.getType(), fds, i)) return;
 	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
@@ -259,7 +292,9 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 // DELETE
 void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
-	prepareServer(getFilePath(receivedData), fds, i);
+	Response cresponse;
+	Server &server = prepareServer(getFilePath(receivedData), fds, i, cresponse); (void)server;
+	if (prepareFailure(cresponse.getType(), fds, i)) return;
 	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
@@ -304,7 +339,9 @@ void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> 
 // OTHER
 void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
-	prepareServer(getFilePath(receivedData), fds, i);
+	Response cresponse;
+	Server &server = prepareServer(getFilePath(receivedData), fds, i, cresponse); (void)server;
+	if (prepareFailure(cresponse.getType(), fds, i)) return;
 	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
@@ -334,7 +371,9 @@ void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> f
 // Handle file upload
 void Manager::handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i)
 {
-	prepareServer(getFilePath(receivedData), fds, i);
+	Response cresponse;
+	Server &server = prepareServer(getFilePath(receivedData), fds, i, cresponse); (void)server;
+	if (prepareFailure(cresponse.getType(), fds, i)) return;
 	std::cout << "UPLOADING" << std::endl;
 	std::cout << "i = " << i << std::endl;
 	size_t index;
@@ -410,11 +449,11 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	theFile.close();
 
 	// Send a success response
-	std::string response;
+	std::string responsestr;
 	std::stringstream responseStream;
 	responseStream << "HTTP/1.1 200 OK\r\nContent-Length: 26\r\n\r\nFile uploaded successfully";
-	response = responseStream.str();
-	send(fds[i].fd, response.c_str(), response.length(), 0);
+	responsestr = responseStream.str();
+	send(fds[i].fd, responsestr.c_str(), responsestr.length(), 0);
 }
 
 // Handle chunked file upload

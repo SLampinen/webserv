@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+
+<h1>This is the frontpage </h1>
+
+<p>You have reached the frontpage</p>
+
+<form action="" method="post">
+	<button name="data" value="add">add button</button>
+<form action="" method="post">
+	<button name="data" value="remove">remove button</button>
+<form action="" method="post">
+	<button name="data" value="print">print button</button>
+</form>
+<form action="php/action.php" method="get">
+	<button name=""data value="do_action">action button</button>
+</form>
+<form action="/upload" method="post" enctype="multipart/form-data">
+	<label for="file">Choose file to upload</label>
+	<input type="file" id="file" name="file">
+	<button type="submit">Upload</button>
+</form>
+<form id="deleteform" onsubmit="javascript: deleteApp(this.arg.value)">
+	<label>Choose file to delete </label>
+	<input type="text" id="arg" />
+	<button type="submit">Delete</button>
+</form>
+<script>
+function deleteApp(file) {
+  fetch('http://localhost:4245/files/'+file, { method: 'DELETE' });
+}
+</script>
+</body>
+</html>

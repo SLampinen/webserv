@@ -35,6 +35,7 @@ class ConfigServer : public ConfigSection {
 		size_t getSize() const;
 		size_t getNumOfPorts() const;
 		int getPort(size_t index);
+		bool isThereLocationMatch();
 		Location &getMatchedLocation();
 
 	private:

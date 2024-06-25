@@ -88,9 +88,8 @@ Response ConfigServer::resolveRequest(const Request &request) {
 
 bool ConfigServer::resolveLocation(int const method, std::string const &request_path, size_t &index) {
 	size_t match_size = 0, new_match_size = 0;
-	std::cout << "locations size: " << _locations.size() << " ";
 	for (size_t i = 0; i < _locations.size(); i++) {
-		std::cout << "matching locations: [" << request_path << "][" << _locations.at(i)._path << "]" << std::endl;
+		//std::cout << "matching locations: [" << request_path << "][" << _locations.at(i)._path << "]" << std::endl;
 		if (_locations.at(i).requestMatch(method, request_path, new_match_size) && new_match_size > match_size) {
 			match_size = new_match_size;
 			index = i;
@@ -100,13 +99,15 @@ bool ConfigServer::resolveLocation(int const method, std::string const &request_
 
 Response ConfigServer::resolveRequest(int const method, std::string const &request_path) {
 	size_t match_index;
+	_last_matched_location = std::string::npos;
 	if (!resolveLocation(method, request_path, match_index))
 		return (Response(404, getErrorPage(404)));
+	if (!_locations.at(match_index).methodAvailable(method))
+		return (Response(405, getErrorPage(405)));
 	_last_matched_location = match_index;
 	std::string root_path = _locations.at(match_index).makeRootPath(request_path);
 	if (request_path.back() == '/' && root_path.back() == '/')
 		return (Response(RES_DIR, root_path));
-	
 	if (std::string cgi_path; _locations.at(match_index).checkCGI(request_path, cgi_path))
 		return (Response(RES_CGI, root_path, cgi_path));
 	return (Response(RES_FILE, root_path));
@@ -128,6 +129,8 @@ std::string ConfigServer::getName() const {
 size_t ConfigServer::getSize() const { return _max_client_body_size; }
 size_t ConfigServer::getNumOfPorts() const { //std::cout << "BREAK getNOP [" << std::to_string(_ports.size()) << "]" << std::endl; 
 	return _ports.size(); }
+bool ConfigServer::isThereLocationMatch() { return (_last_matched_location != std::string::npos); }
+// unsafe, check with isThereLocationMatch first
 Location &ConfigServer::getMatchedLocation() { return _locations.at(_last_matched_location); }
 int ConfigServer::getPort(size_t index) { return _ports.at(index); }
 

@@ -8,6 +8,7 @@ void readDefaultResponses(ConfigSection &def_res) {
 		throw std::logic_error("Invalid default responses file!");
 	while (std::getline(file, line)) {
 		std::vector<std::string> vec;
+		vec.push_back("Default Responses");
 		vec.push_back(line.substr(0, line.find(" ")));
 		vec.push_back(line.substr(line.find(" "), std::string::npos));
 		def_res.addConfigLine(vec);
