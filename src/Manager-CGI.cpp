@@ -5,11 +5,15 @@ void Manager::handleTimeout(size_t index, int k)
 {
 	std::cout << "This should timeout, i = " << index << " and fd = " << fds[index].fd << std::endl;
 	std::cout << "Last message happened at " << fdsTimestamps[index] << std::endl;
-	std::string body = "Connection timeout";
-	std::string response = serverList.at(serverIndex.at(k).second).makeHeader(408, body.size());
-	std::cout << "NOW resp = " << response << std::endl;
+	std::string header = "HTTP/1.1 500 Internal Server Error \r\n";
+	std::string body = "Server is unable to process your request in time";
+	header.append("Content-Length: " + std::to_string(body.size()) + "\r\n");
+	header.append("Content-Type: text/plain\r\n");
+	header.append("\r\n");
+	std::string response;
+	response.append(header);
 	response.append(body);
-	std::cout << "AFTER resp = " << response << std::endl;
+	std::cout << "AFTER resp = \n" << response << std::endl;
 	std::cout << "Send return = " << send(fds[index].fd, response.c_str(), response.length(), 0) << std::endl;
 	cgiOnGoing[index] = 0;
 	std::cout << "Killed at timeout" << std::endl;
@@ -46,7 +50,7 @@ void Manager::handleCgiWork(size_t index)
 	std::cout << "pids size = " << pids.size() << std::endl;
 	for (size_t k = 0; k < pids.size(); k++)
 	{
-		std::cout << time(NULL) - fdsTimestamps[index] << std::endl;
+		std::cout << "Time diff = " << time(NULL) - fdsTimestamps[index] << ", Response timeout = " << RESPONSE_TIMEOUT << std::endl;
 		if (time(NULL) - fdsTimestamps[index] > RESPONSE_TIMEOUT)
 		{
 			for (size_t j = 0; j < serverIndex.size(); j++)
