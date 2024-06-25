@@ -12,10 +12,7 @@
 class ConfigServer : public ConfigSection {
 	public:
 		ConfigServer();
-		~ConfigServer() { 
-			//std::cout << "ConfigServer [" << getName() << "] destroyed" << std::endl;
-			//printData();
-		}
+		~ConfigServer() {}
 
 		void initialize();
 		bool addConfigServerName(const std::string name);
@@ -35,6 +32,7 @@ class ConfigServer : public ConfigSection {
 		size_t getSize() const;
 		size_t getNumOfPorts() const;
 		int getPort(size_t index);
+		bool isThereLocationMatch();
 		Location &getMatchedLocation();
 
 	private:

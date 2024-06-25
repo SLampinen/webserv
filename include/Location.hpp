@@ -33,11 +33,11 @@ class Location : public ConfigSection {
 		bool directoryIndexAllowed();
 		std::string defaultIndexFile();
 		std::string getRootPath();
+		bool methodAvailable(const int method);
 		
 		const std::string _path;
 
 	private:
-		bool methodAvailable(const int method);
 		bool _get, _post, _del;
 		std::string _rewrite;
 		std::string _rootpath;

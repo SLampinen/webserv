@@ -17,9 +17,8 @@ void Location::initialize() {
 			else
 				throw std::runtime_error("Invalid method specified in location!");
 		}
-	} else {
-		_get = true;
-	}
+	} 
+	// else { _get = true; } // ! removed GET by default, using none by default
 	if (doesLineExist("root", idx))
 		_rootpath = getIndexArg(idx, 1);
 	if (doesLineExist("rewrite", idx))
@@ -34,22 +33,22 @@ void Location::initialize() {
 	}
 }
 
-bool Location::requestMatch(const int method, std::string const &request_path, size_t &match_size) {
-	if (methodAvailable(method) && request_path.find(_path) == 0)
-		return (std::cout << "loc:reqMatch: " << match_size << std::endl, match_size = _path.size(), true);
+bool Location::requestMatch(const int method, std::string const &request_path, size_t &match_size) { (void)method;
+	if (request_path.find(_path) == 0) 
+		return (match_size = _path.size(), true);
 	return false;
 }
 
 bool Location::requestMatch(const Request &request, std::string &filepath) {
 	if (request._path.find(_path) == 0 && methodAvailable(request._method))
-		return (filepath = _rootpath + request._path.substr(_path.size() - 1, std::string::npos), true);
+		return (filepath = _rootpath + request._path.substr(_path.size() -1, std::string::npos), true);
 	return false;
 }
 
 std::string Location::makeRootPath(std::string const &request_path) {
 	if (!_index_file.empty() && request_path.back() == '/')
-		return (_rootpath + request_path.substr(_path.size() - 1, std::string::npos) + _index_file);
-	return (_rootpath + request_path.substr(_path.size() - 1, std::string::npos));
+		return (_rootpath + request_path.substr(_path.size(), std::string::npos) + _index_file);
+	return (_rootpath + request_path.substr(_path.size(), std::string::npos));
 }
 
 bool Location::checkCGI(std::string const &request_path, std::string &cgi_path) {

@@ -1,6 +1,6 @@
 #include "manager.hpp"
 
-Manager::Manager() {}
+Manager::Manager() : default_responses("DefaultResponses") {}
 
 Manager::~Manager() {
 	//for (ConfigServer &csrv : configserverList) csrv.getNumOfPorts();
@@ -92,14 +92,10 @@ void Manager::run(std::string configFile)
 {
 	std::cout << "opening config file: " << configFile << std::endl;
 	ConfigParser config_parse(configFile);
+
 	readConfig(config_parse);
 	std::cerr << "----------" << std::endl << "Boundaries size : " << boundaries.size() << std::endl << "----------" << std::endl;
 	std::cerr << "Timestamps size : " << fdsTimestamps.size() << std::endl;
-	// if (readConfig(configFile) == 0)
-	// {
-	// 	std::cerr << "ERROR reading config file" << std::endl;
-	// 	return;
-	// }
 	std::cout << "--------------------------------------------------" << std::endl
 			  << "number of servers = " << serverList.size() << std::endl;
 

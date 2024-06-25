@@ -1,33 +1,9 @@
 #include "server.hpp"
 
-// Server::Server() {
-// 	this->servName = "defaultserv";
-// 	this->error404Dir = DEFAULT404DIR;
-// 	this->cgiExt = "";
-// 	this->cgiPath = "";
-// 	this->client_max_body_size = 0;
-// 	this->numOfPorts = 0;
-// 	this->directoryIndex = true;
-// }
 
-Server::~Server() { std::cout << "Deleting server" << std::endl; }
+Server::~Server() {} // std::cout << "Deleting server" << std::endl; }
 
-// Server::Server(const Server &var)
-// {
-// 	this->servName = var.servName;
-// 	this->rootDir = var.rootDir;
-// 	this->error404Dir = var.error404Dir;
-// 	this->errorPages = var.errorPages;
-// 	this->cgiExt = var.cgiExt;
-// 	this->cgiPath = var.cgiPath;
-// 	this->client_max_body_size = var.client_max_body_size;
-// 	this->numOfPorts = var.numOfPorts;
-// 	this->ports = var.ports;
-// 	this->listeners = var.listeners;
-// 	this->directoryIndex = var.directoryIndex;
-// }
-
-Server::Server(ConfigServer &cfg_srv) : csrv(cfg_srv) { 
+Server::Server(ConfigServer &cfg_srv, ConfigSection &def_res) : csrv(cfg_srv), def_res(def_res) { 
 	servName = cfg_srv.getName();
 	rootDir = "";
 	cgiExt = "";
@@ -77,108 +53,31 @@ std::string Server::makeStatus(int status)
 	return "ERROR";
 }
 
-std::string Server::makeStatus2xx(int status)
-{
-	if (status == 200)
-		return " OK";
-
-	if (status == 201)
-		return " Created";
-
-	if (status == 202)
-		return " Accepted";
-
-	if (status == 203)
-		return " Non-Authoritative Information";
-
-	return " ERROR";
-}
-
-std::string Server::makeStatus3xx(int status)
-{
-	if (status == 300)
-		return " Multiple Choices";
-
-	return " ERROR";
-}
-
-std::string Server::makeStatus4xx(int status)
-{
-	if (status == 400)
-		return " Bad Request";
-
-	if (status == 403)
-	{
-		return " Forbidden";
-	}
-
-	if (status == 404)
-		return " Not Found";
-
-	if (status == 408)
-	{
-		return " Connection timeout";
-	}
-
-	if (status == 413)
-		return " Request Entity Too Large";
-
-	if (status == 418)
-		return " I'm a teapot";
-
-	return " ERROR";
-}
-
-std::string Server::makeStatus5xx(int status)
-{
-	if (status == 500)
-		return " Internal Server Error";
-
-	if (status == 501)
-		return " Method Not Implemented";
-
-	return " ERROR";
-}
-// std::string Server::makeHeader(int responseStatus, int responseSize)
-// {
-// 	std::stringstream headerStream;
-// 	std::string header;
-// 	headerStream << "HTTP/1.1 " << responseStatus;
-// 	if (responseStatus >= 100 && responseStatus <= 199)
-// 		headerStream << " ";
-// 	else if (responseStatus >= 200 && responseStatus <= 299)
-// 		headerStream << makeStatus2xx(responseStatus) << "\r\n";
-// 	else if (responseStatus >= 300 && responseStatus <= 399)
-// 		headerStream << makeStatus3xx(responseStatus) << "\r\n";
-// 	else if (responseStatus >= 400 && responseStatus <= 499)
-// 		headerStream << makeStatus4xx(responseStatus) << "\r\n";
-// 	else if (responseStatus >= 500 && responseStatus <= 599)
-// 		headerStream << makeStatus5xx(responseStatus) << "\r\n";
-// 	//not used right now, will be used once config parser gets updated
-// 	std::stringstream newStream;
-// 	newStream << makeStatus(responseStatus) << "\r\n";
-// 	std::cout << "DEBUG: " << newStream.str() << std::endl;
-// 	//end of future/debug
-// 	headerStream << "Content-Length: " << responseSize << "\r\n\r\n";
-// 	header = headerStream.str();
-// 	if (header.find("ERROR") != std::string::npos)
-// 	{
-// 		std::cout << "Created ERROR, this is bad" << std::endl;
-// 		return "ERROR";
-// 	}
-// 	return header;
-// }
-
-// ! merge version by rleskine TODO: csrv missing, update getErrorPage in ConfigServer
+// ! merge version by rleskine TODO: update getErrorPage in ConfigServer
 std::string Server::makeHeader(int responseStatus, int responseSize) {
+	std::cout << "makeHeader called with " << std::to_string(responseStatus) << " " << std::to_string(responseSize) << std::endl;
 	std::string header = "HTTP/1.1 " + std::to_string(responseStatus) + " ";
-	//std::string error_page;
 	std::string error_page = csrv.getErrorPage(responseStatus);
-	if (!error_page.empty())
-		header += csrv.getErrorPage(responseStatus); // ! update getErrorpage to fetch file
-	else
-		header += "PUT DEFAULT RESPONSE TEXT HERE";
+	if (!error_page.empty()) {
+		std::ifstream error_file(error_page);
+		if (!error_file)
+			error_page = "Opening error file [" + error_page + "] failed!";
+		else {
+			std::getline(error_file, error_page, '\0');
+			error_file.close();
+		}
+	}
+	// def_res.printAll();
+	// std::cout << "RES_STS_STR: " << std::to_string(responseStatus) << std::endl;
+	// std::cout << "DEF_RES404: " << def_res.getIndexArg("404", 0) << std::endl;
+	// std::cout << "DEF_RES404: " << def_res.getIndexArg("404", 1) << std::endl;
+	//std::cout << "def_restest: " << def_re
+	header += def_res.getIndexArg(std::to_string(responseStatus), 1);
+	if (responseSize == 0 && !error_page.empty())
+		responseSize = error_page.size();
 	header += "\r\nContent-Length: " + std::to_string(responseSize) + "\r\n\r\n";
+	if (!error_page.empty())
+		header += error_page;
 	return header;
 }
 
@@ -197,15 +96,14 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	{
 		std::string fileFull;
 		fileFull.append(rootDir);
-		fileFull.append("home.html");
+		//fileFull.append("home.html");
+		fileFull.append(indexFile);
 		std::cout << "the front page is " << fileFull << std::endl;
 		open(fileFull.data(), O_RDONLY);
 		std::ifstream file(fileFull);
 		if (file.is_open() == 0)
 		{
-			responseStream << "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nFront page";
-			response = responseStream.str();
-			return response;
+			return makeHeader(404, 0);
 		}
 		std::getline(file, buffer, '\0');
 		header = makeHeader(200, buffer.size());
@@ -264,9 +162,9 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 		std::ifstream errormsg(errorDir);
 		if (errormsg.is_open() == 0)
 		{
-			std::string body = "Page you were looking for does not exist, nor should it ever exist";
-			response = makeHeader(404, body.size());
-			response.append(body);
+			//std::string body = "Page you were looking for does not exist, nor should it ever exist";
+			response = makeHeader(404, 0);
+			//response.append(body);
 			return response;
 		}
 		std::getline(errormsg, buffer, '\0');
@@ -303,8 +201,7 @@ void Server::log(std::string text)
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
 	strftime(timeBuffer, 80, "%T %d.%m.%Y", timeinfo);
-	logfile << "----------------------------------------------------------------------------------------------------" << std::endl;
-	logfile << "New entry in log, at time " << timeBuffer << std::endl;
+	logfile << "[New entry in log, at time " << timeBuffer << "]" << std::endl;
 	logfile << text;
 	logfile << std::endl
 			<< std::endl;

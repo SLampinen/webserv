@@ -53,14 +53,15 @@ bool ConfigFile::processLine() {
 	ws_get_next_nonws(_line, pos);
 	_words.push_back(word);
 	while (ws_get_next_nonws(_line, pos) && !ws_endl(_line, pos)) {
-		std::cout << "EXISTING WORDS: " << _words.size() << " POS: " << pos << " REMAINING[" << _line.substr(pos, std::string::npos) << "]" << std::endl;
+		//std::cout << "EXISTING WORDS: " << _words.size() << " POS: " << pos << " REMAINING[" << _line.substr(pos, std::string::npos) << "]" << std::endl;
 		if (!processParam(pos) && !ws_endl(_line, pos))
 			throw ConfigFileException("Error processing arguments at line: " + _words.at(0));
 		pos++;
 	}
 	if (_words.back() == "{")
 		_sections.push_back(_words.at(0));
-	return (std::cout << "FINAL WORDS SIZE: " << _words.size() << std::endl, true);
+	//return (std::cout << "FINAL WORDS SIZE: " << _words.size() << std::endl, true);
+	return true;
 }
 
 const std::string &ConfigFile::getSection() { 
