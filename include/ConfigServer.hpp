@@ -12,10 +12,7 @@
 class ConfigServer : public ConfigSection {
 	public:
 		ConfigServer();
-		~ConfigServer() { 
-			//std::cout << "ConfigServer [" << getName() << "] destroyed" << std::endl;
-			//printData();
-		}
+		~ConfigServer() {}
 
 		void initialize();
 		bool addConfigServerName(const std::string name);

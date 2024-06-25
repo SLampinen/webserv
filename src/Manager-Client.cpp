@@ -113,24 +113,17 @@ void Manager::handleClientCommunication(size_t index)
 			std::cout << "DELETING" << std::endl;
 			handleDelete(receivedData, fds, index);
 		}
-		else if (receivedData.find("HEAD") != std::string::npos || receivedData.find("PUT") != std::string::npos ||
+		else if ((receivedData.find("HEAD") != std::string::npos || receivedData.find("PUT") != std::string::npos ||
 				 receivedData.find("CONNECT") != std::string::npos || receivedData.find("OPTIONS") != std::string::npos ||
-				 receivedData.find("TRACE") != std::string::npos || receivedData.find("PATCH") != std::string::npos)
+				 receivedData.find("TRACE") != std::string::npos || receivedData.find("PATCH") != std::string::npos) &&
+				 receivedData.find("Content-Type:") == std::string::npos)
 		{
 			std::cout << "OTHER METHOD" << std::endl;
 			handleOther(receivedData, fds, index);
 		}
 		else
 		{
-			std::string response = "HTTP/1.1 400 Bad Request\r\n\r\n";
-			send(fds[index].fd, response.c_str(), response.size(), 0);
-			std::cout << "Bad Request" << std::endl;
-			close(fds[index].fd);
-			fds.erase(fds.begin() + index);
-			fdsTimestamps.erase(fdsTimestamps.begin() + index);
-			cgiOnGoing.erase(cgiOnGoing.begin() + index);
-			index--;
-			return;
+			handleContinue(receivedData, index);
 		}
 		// }
 		// else
