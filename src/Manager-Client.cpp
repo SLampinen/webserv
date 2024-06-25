@@ -98,6 +98,14 @@ void Manager::handleClientCommunication(size_t index)
 		// if (!clientStates[fds[index].fd].transferInProgress)
 		// {
 		// clientStates[fds[index].fd].transferInProgress = true;
+		size_t indexB;
+		for (indexB = 0; indexB < boundaries.size(); indexB++)
+		{
+			if (receivedData.find(boundaries.at(indexB).second) != std::string::npos)
+			{
+				break;
+			}
+		}
 		if (receivedData.find("GET") != std::string::npos)
 		{
 			std::cout << "GETTING" << std::endl;
@@ -120,6 +128,11 @@ void Manager::handleClientCommunication(size_t index)
 			std::cout << "OTHER METHOD" << std::endl;
 			handleOther(receivedData, fds, index);
 		}
+		else if (indexB < boundaries.size())
+		{
+			std::cout << "CONT" << std::endl;
+			handleContinue(receivedData, index);
+		}
 		else
 		{
 			std::string response = "HTTP/1.1 400 Bad Request\r\n\r\n";
@@ -132,16 +145,6 @@ void Manager::handleClientCommunication(size_t index)
 			index--;
 			return;
 		}
-		// }
-		// else
-		// {
-		// 	handleContinue(index);
-		// 	// 	// check if file is complete, then set tranferinprogress to false.
-		// 	std::cerr << "time now : " << time(NULL) << " and timestamp : " << fdsTimestamps.at(index) << std::endl;
-		// 	if (fdsTimestamps[index] - time(NULL) > REQUEST_TIMEOUT)
-		// 	{
-		// 		handleTimeout(index);
-		// 	}
 		// }
 	}
 }

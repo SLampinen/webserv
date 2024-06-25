@@ -3,4 +3,4 @@
 <body>This is coming from php file\n
 </body>
 </form>"; ?>
-<?php sleep(100);?>
+<?php sleep(3);?>

@@ -372,7 +372,8 @@ void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> f
 void Manager::handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i)
 {
 	Response cresponse;
-	Server &server = prepareServer(getFilePath(receivedData), fds, i, cresponse); (void)server;
+	// std::cout << receivedData << std::endl;
+	Server &server = prepareServer("/", fds, i, cresponse); (void)server;
 	if (prepareFailure(cresponse.getType(), fds, i)) return;
 	std::cout << "UPLOADING" << std::endl;
 	std::cout << "i = " << i << std::endl;
@@ -384,10 +385,17 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	}
 
 	// Extract the filename from the received data
-	size_t start = receivedData.find("filename=") + 10;
-	size_t end = receivedData.find("\"", start);
-	std::string name = receivedData.substr(start, end - start);
-
+	size_t start = receivedData.find("filename=");
+	size_t end = 0;
+	if (start != std::string::npos)
+	{
+		start += 10;
+		end = receivedData.find("\"", start);
+	}
+	std::string name;
+	if (end != std::string::npos && end != 0)
+		name = receivedData.substr(start, end - start);
+	// std::cerr << "THE data = " << receivedData << std::endl;
 	std::cout << "UPLOAD name[" << name << "]" << std::endl;
 
 	std::ofstream theFile;
@@ -515,7 +523,6 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 	}
 	std::cout << "CONTINUING" << std::endl;
 	size_t indexB;
-	std::cout << boundaries.at(0).second << std::endl;
 	for (indexB = 0; indexB < boundaries.size(); indexB++)
 	{
 		if (receivedData.find(boundaries.at(indexB).second) != std::string::npos)
@@ -526,14 +533,21 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 		}
 	}
 	// std::cerr << receivedData << std::endl;
+	std::string name;
 	std::cout << indexB << " and " << boundaries.size() << std::endl;
 	if (indexB < boundaries.size())
 	{
 		std::cout << "is smaller" << std::endl;
-		std::string name = boundaries.at(indexB).first;
+		name = boundaries.at(indexB).first;
 		std::cout << "name of file = " << name << std::endl;
 		std::ofstream theFile;
 		theFile.open(name, std::ofstream::app);
+		if (theFile.is_open() == 0)
+		{
+			std::cout << "NAME is wrong" << std::endl;
+			//handle this better
+			theFile.open("www/files/turha.txt");
+		}
 		theFile << receivedData;
 		theFile.close();
 	}
@@ -548,9 +562,16 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 				break;
 			}
 		}
-		std::cout << "name of file = " << fdsFileNames.at(namesIndex).second << std::endl;
+		name = fdsFileNames.at(namesIndex).second;
+		std::cout << "name of file = " << name << std::endl;
 		std::ofstream theFile;
-		theFile.open(fdsFileNames.at(namesIndex).second, std::ofstream::app);
+		theFile.open(name, std::ofstream::app);
+		if (theFile.is_open() == 0)
+		{
+			std::cout << "NAME is wrong" << std::endl;
+			//handle this better
+			theFile.open("www/files/turha.txt");
+		}
 		theFile << receivedData;
 		theFile.close();
 	}
