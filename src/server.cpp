@@ -26,6 +26,8 @@ size_t Server::getClientBodySize(void) { return this->client_max_body_size; }
 std::string Server::getCGIPath(void) { return this->cgiPath; }
 std::string Server::getCGIExt(void) { return this->cgiExt; }
 
+//void Server::readFile(std::ifstream input)
+
 std::string Server::getMIMEType(std::string fileExt)
 {
 	if (fileExt.compare(".html") == 0 || fileExt.compare(".htm") == 0) { return "text/html"; }
@@ -81,11 +83,17 @@ std::string Server::makeHeader(int responseStatus, int responseSize) {
 	return header;
 }
 
+std::string getFileExt(std::string const &s) {
+	if (s.find(".") == std::string::npos) return "";
+	return s.substr(s.find_last_of("."), std::string::npos);
+}
+
 std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 {
 	std::cout << "BUILDING" << std::endl;
 	std::string response;
-	std::string mimeType = getMIMEType(fileExt);
+	//fileExt = getFileExt(fileName); std::cout << "buildhttp fileExt [" << fileExt << "]" << std::endl;
+	std::string mimeType = getMIMEType(getFileExt(fileName));
 	std::cout << "file name = " << fileName << std::endl;
 	std::string header;
 	std::string buffer;
@@ -152,7 +160,7 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	fileFull.append(rootDir);
 	fileFull.append(fileName);
 	fileFull.append(fileExt);
-	std::cout << fileFull << std::endl;
+	std::cout << "FETCHING FILE: " << fileFull << std::endl;
 	open(fileFull.data(), O_RDONLY);
 	std::ifstream file(fileFull);
 	if (file.is_open() == 0)
@@ -174,7 +182,10 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 		response.append(buffer);
 		return response;
 	}
-	std::getline(file, buffer, '\0');
+	std::stringstream streambuffer;
+	streambuffer << file.rdbuf();
+	buffer = streambuffer.str();
+	file.close();
 	header = makeHeader(200, buffer.size());
 	response.append(header);
 	response.append(buffer);

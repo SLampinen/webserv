@@ -72,10 +72,13 @@
 // }
 
 // ! added by rleskine
-size_t getServer(std::vector<std::pair<int, size_t> > const &server_index, int fd) {
+size_t getServer(std::vector<std::pair<int, size_t>> const &server_index, int fd)
+{
 	size_t index = 0;
-	for (; index < server_index.size(); index++) {
-		if (server_index.at(index).first == fd) break;
+	for (; index < server_index.size(); index++)
+	{
+		if (server_index.at(index).first == fd)
+			break;
 	}
 	if (index == server_index.size())
 		throw std::runtime_error("Manager::handleGet couldn't match to server");
@@ -99,7 +102,8 @@ size_t getServer(std::vector<std::pair<int, size_t> > const &server_index, int f
 // }
 
 // ! added by rleskine
-std::string getFilePath(std::string const &header) {
+std::string getFilePath(std::string const &header)
+{
 	size_t pos = header.find(' ') + 1; // ! + 1 if leading slash
 	std::string filepath = header.substr(pos, header.find(' ', pos) - pos);
 	if (filepath.find('?') != std::string::npos)
@@ -108,13 +112,15 @@ std::string getFilePath(std::string const &header) {
 }
 
 // ! RUN BEFORE HANDLE* (except rewritten handleGet)
-Server &Manager::prepareServer(int const method, std::string file_path, std::vector<struct pollfd> fds, int i, Response &response) {
+Server &Manager::prepareServer(std::string file_path, std::vector<struct pollfd> fds, int i, Response &response)
+{
 	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
 	ConfigServer &c_server = configserverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
-	response = c_server.resolveRequest(method, file_path);
-	if (c_server.isThereLocationMatch()) 
+	response = c_server.resolveRequest(REQ_GET, file_path);
+	if (c_server.isThereLocationMatch())
 		server.setLocation(c_server.getMatchedLocation());
-	else {
+	else
+	{
 		Location emptyloc("");
 		server.setLocation(emptyloc);
 	}
@@ -123,7 +129,8 @@ Server &Manager::prepareServer(int const method, std::string file_path, std::vec
 }
 
 // ! RUN AFTER prepareServer TO HANDLE LOCATION NOT MATCHING
-bool Manager::prepareFailure(int code, std::vector<struct pollfd> fds, int i) {
+bool Manager::prepareFailure(int code, std::vector<struct pollfd> fds, int i)
+{
 	std::cout << "\e[0;36mPREPFAIL CALLED [" << code << "]\e[0m" << std::endl;
 	if (code != 404 && code != 405)
 		return false;
@@ -152,16 +159,18 @@ bool Manager::prepareFailure(int code, std::vector<struct pollfd> fds, int i) {
 // }
 
 // ! final(?) rewritten version to work with prepareServer and handle non-location matching 404 and 405
-void Manager::handleGet(std::string request_data, std::vector<struct pollfd> fds, int i) {
+void Manager::handleGet(std::string request_data, std::vector<struct pollfd> fds, int i)
+{
 	Response response;
-	Server &server = prepareServer(REQ_GET, getFilePath(request_data), fds, i, response);
-	if (prepareFailure(response.getType(), fds, i)) return;
+	Server &server = prepareServer(getFilePath(request_data), fds, i, response);
+	if (prepareFailure(response.getType(), fds, i))
+		return;
 	if (response.getType() == RES_CGI)
 		return (handleCGI(request_data, fds, i));
-	//std::string s = getFilePath(request_data).substr(server.getRootDir().size(), std::string::npos);
+	// std::string s = getFilePath(request_data).substr(server.getRootDir().size(), std::string::npos);
 	std::cout << "BREAK: rootdir: " << server.getRootDir() << " fpath: " << getFilePath(request_data) << std::endl;
 	std::cout << "B2 :res.path" << response.getPath() << std::endl;
-	//std::string response_data(server.buildHTTPResponse(getFilePath(request_data).substr(server.getRootDir().size(), std::string::npos), ""));
+	// std::string response_data(server.buildHTTPResponse(getFilePath(request_data).substr(server.getRootDir().size(), std::string::npos), ""));
 	std::string response_data(server.buildHTTPResponse(response.getPath().substr(server.getRootDir().size(), std::string::npos), ""));
 	send(fds[i].fd, response_data.c_str(), response_data.length(), 0);
 }
@@ -240,8 +249,10 @@ void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds
 void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
 	Response response;
-	Server &server = prepareServer(REQ_POST, getFilePath(receivedData), fds, i, response); (void)server;
-	if (prepareFailure(response.getType(), fds, i)) return;
+	Server &server = prepareServer(getFilePath(receivedData), fds, i, response);
+	(void)server;
+	if (prepareFailure(response.getType(), fds, i))
+		return;
 	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
@@ -260,6 +271,8 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 		end = receivedData.find_first_of("\r\n ", start);
 		std::string boundary = receivedData.substr(start, end - start);
 		end = receivedData.find(boundary, end);
+		//boundary starts with --
+		boundary = "--" + boundary;
 		std::cerr << "Boundary = " << boundary << std::endl;
 
 		// helps at not crashing when input is chunked
@@ -271,6 +284,8 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 		{
 			handleUpload(rawData, boundary, fds, i);
 		}
+		else
+			boundaries.push_back(std::make_pair("", boundary));
 	}
 	else
 	{
@@ -293,8 +308,10 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
 	Response cresponse;
-	Server &server = prepareServer(REQ_DEL, getFilePath(receivedData), fds, i, cresponse); (void)server;
-	if (prepareFailure(cresponse.getType(), fds, i)) return;
+	Server &server = prepareServer(getFilePath(receivedData), fds, i, cresponse);
+	(void)server;
+	if (prepareFailure(cresponse.getType(), fds, i))
+		return;
 	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
@@ -339,9 +356,11 @@ void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> 
 // OTHER
 void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> fds, int i)
 {
-	//Response cresponse;
-	//Server &server = prepareServer(getFilePath(receivedData), fds, i, cresponse); (void)server;
-	//if (prepareFailure(cresponse.getType(), fds, i)) return;
+	Response cresponse;
+	Server &server = prepareServer(getFilePath(receivedData), fds, i, cresponse);
+	(void)server;
+	if (prepareFailure(cresponse.getType(), fds, i))
+		return;
 	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
@@ -367,13 +386,15 @@ void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> f
 	send(fds[i].fd, response.c_str(), response.length(), 0);
 }
 
-
 // Handle file upload
 void Manager::handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i)
 {
-	//Response cresponse;
-	//Server &server = prepareServer(getFilePath(receivedData), fds, i, cresponse); (void)server;
-	//if (prepareFailure(cresponse.getType(), fds, i)) return;
+	Response cresponse;
+	// std::cout << receivedData << std::endl;
+	Server &server = prepareServer("/", fds, i, cresponse);
+	(void)server;
+	if (prepareFailure(cresponse.getType(), fds, i))
+		return;
 	std::cout << "UPLOADING" << std::endl;
 	std::cout << "i = " << i << std::endl;
 	size_t index;
@@ -384,27 +405,33 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	}
 
 	// Extract the filename from the received data
-	std::cout << "\e[0;36m" << receivedData << "\e[0m]" << std::endl;
-	size_t start = receivedData.find("filename=") + 10;
-	size_t end = receivedData.find("\"", start);
-	std::string name = receivedData.substr(start, end - start);
-
+	size_t start = receivedData.find("filename=");
+	size_t end = 0;
+	if (start != std::string::npos)
+	{
+		start += 10;
+		end = receivedData.find("\"", start);
+	}
+	std::string name;
+	if (end != std::string::npos && end != 0)
+		name = receivedData.substr(start, end - start);
+	// std::cerr << "THE data = " << receivedData << std::endl;
 	std::cout << "UPLOAD name[" << name << "]" << std::endl;
 
 	std::ofstream theFile;
 	std::string root = serverList.at(serverIndex.at(index).second).getRootDir().append("files/");
 	name = root.append(name);
 	std::cout << "UPLOAD name[" << name << "]" << std::endl;
-
+	// return;
 	for (size_t tbd = 0; tbd < fdsFileNames.size(); tbd++)
 	{
 		if (fdsFileNames.at(tbd).first == i)
 		{
-			fdsFileNames.erase(fdsFileNames.begin() + i);
+			fdsFileNames.erase(fdsFileNames.begin() + tbd);
 			break;
 		}
 	}
-	
+
 	fdsFileNames.push_back(std::make_pair(i, name));
 	std::cout << "name = " << name << std::endl;
 
@@ -425,31 +452,40 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 
 	// Find the start and end of the file content in the received data
 	start = receivedData.find("Content-Type");
-    std::cout << "start = " << start << std::endl;
+	std::cout << "start = " << start << std::endl;
 	if (start != std::string::npos)
 		start = receivedData.find("\n", start);
 	else
 		start = receivedData.find("\n");
-    std::cout << "start = " << start << std::endl;
+	std::cout << "start = " << start << std::endl;
 	start = receivedData.find_first_not_of("\r\n", start);
 	std::cout << "\e[0;33m" << receivedData.substr(start, std::string::npos) << "\e[0m" << std::endl;
 	end = receivedData.find(boundary, start);
-    // end = receivedData.find_last_of("\r\n", end);
+	bool lastBoundary = false;
 	if (end != std::string::npos)
-    {
-        std::cout << "Boundary found, this is the end of firefox content" << std::endl;
-        end = receivedData.find_last_of("\r\n", end) - 1;
-        std::string fileContent = receivedData.substr(start, end - start);
-            if (end > start)
-        theFile << fileContent;
-    }
-    else
-    {
-        std::string fileContent = receivedData.substr(start);
-        theFile << fileContent;
-    }
+	{
+		std::cout << "Boundary found, this is the end of firefox content" << std::endl;
+		if (receivedData.at(end + boundary.size()) == '-' && receivedData.at(end + boundary.size() + 1) == '-')
+		{
+			lastBoundary = true;
+		}
+		
+		std::cout << "The post-boundary-data : " << receivedData.substr(end + boundary.size()) << std::endl;
+		std::string fileContent = receivedData.substr(start, end - start);
+		if (end > start)
+			theFile << fileContent;
+	}
+	else
+	{
+		std::string fileContent = receivedData.substr(start);
+		theFile << fileContent;
+	}
 	theFile.close();
-
+	if (lastBoundary)
+	{
+		boundaries.pop_back();
+	}
+	
 	// Send a success response
 	std::string responsestr;
 	std::stringstream responseStream;
@@ -506,55 +542,119 @@ void Manager::handleChunk(std::string receivedData, std::vector<struct pollfd> f
 
 void Manager::handleContinue(std::string receivedData, int fdsIndex)
 {
-	for (size_t j = 0; j < serverIndex.size(); j++)
+	Response cresponse;
+	Server &server = prepareServer("/", fds, fdsIndex, cresponse);
+	(void)server;
+	size_t currentServer;
+	for (currentServer = 0; currentServer < serverIndex.size(); currentServer++)
 	{
-		if (serverIndex.at(j).first == fds[fdsIndex].fd)
+		if (serverIndex.at(currentServer).first == fds[fdsIndex].fd)
 		{
 			// std::cout << receivedData << std::endl;
-			serverList.at(serverIndex.at(j).second).log("handleContinue" + receivedData);
+			serverList.at(serverIndex.at(currentServer).second).log(receivedData);
 			break;
 		}
 	}
 	std::cout << "CONTINUING" << std::endl;
 	size_t indexB;
-	std::cout << boundaries.at(0).second << std::endl;
+	size_t boundaryBegin;
+	std::string name;
+	size_t dataBegin = 0;
+	size_t dataEnd = 0;
+	bool ended = false;
 	for (indexB = 0; indexB < boundaries.size(); indexB++)
 	{
-		if (receivedData.find(boundaries.at(indexB).second) != std::string::npos)
+		std::cout << "looking for boundary: " << boundaries.at(indexB).second << std::endl;
+		if ((boundaryBegin = receivedData.find(boundaries.at(indexB).second)) != std::string::npos)
 		{
-			receivedData = receivedData.substr(0, receivedData.find(boundaries.at(indexB).second));
-			receivedData = receivedData.substr(0, receivedData.find_last_of("\r\n") - 1);
+			if (boundaryBegin == 0)
+			{
+				// curl
+				std::cout << "curl " << std::endl;
+				size_t filenameStart = receivedData.find("filename=") + 10;
+				size_t filenameEnd = receivedData.find("\"", filenameStart);
+				name = receivedData.substr(filenameStart, filenameEnd - filenameStart);
+				std::cout << "name is " << name << std::endl;
+				name = serverList.at(serverIndex.at(currentServer).second).getRootDir().append("files/") + name;
+				std::cout << "rooted name is " << name << std::endl;
+				dataBegin = receivedData.find("\r\n\r\n") + 4;
+				dataEnd = receivedData.find(boundaries.at(indexB).second, dataBegin + 1);
+				if (dataEnd == std::string::npos)
+				{
+					dataEnd = receivedData.size() - 1;
+					std::cout << "NPOSSED" << std::endl;
+				}
+				else
+				{
+					std::cout << "The post-boundary-data : " << receivedData.substr(dataEnd + boundaries.at(indexB).second.size()) << std::endl;
+					if (receivedData.at(dataEnd + boundaries.at(indexB).second.size()) == '-' && receivedData.at(dataEnd + boundaries.at(indexB).second.size() + 1) == '-')
+					{
+						std::cout << "Ending boundary found" << std::endl;
+						ended = true;
+					}
+				}
+				receivedData = receivedData.substr(dataBegin, dataEnd - dataBegin);
+				std::cout << "dbegin = " << dataBegin << " and End = " << dataEnd << std::endl;
+			}
+			else
+			{
+				// firefox
+				std::cout << "firefox " << std::endl;
+				dataEnd = receivedData.find(boundaries.at(indexB).second, dataBegin + 1);
+				if (dataEnd != std::string::npos)
+				{
+					std::cout << "The post-boundary-data : " << receivedData.substr(dataEnd + boundaries.at(indexB).second.size()) << std::endl;
+					if (receivedData.at(dataEnd + boundaries.at(indexB).second.size()) == '-' && receivedData.at(dataEnd + boundaries.at(indexB).second.size() + 1) == '-')
+					{
+						std::cout << "Ending boundary found" << std::endl;
+						ended = true;
+					}
+
+				}
+				receivedData = receivedData.substr(0, receivedData.find(boundaries.at(indexB).second));
+				// receivedData = receivedData.substr(0, receivedData.find_last_of("\r\n") - 1);
+			}
 			break;
 		}
 	}
 	// std::cerr << receivedData << std::endl;
 	std::cout << indexB << " and " << boundaries.size() << std::endl;
-	if (indexB < boundaries.size())
+	if (name.empty())
 	{
-		std::cout << "is smaller" << std::endl;
-		std::string name = boundaries.at(indexB).first;
-		std::cout << "name of file = " << name << std::endl;
-		std::ofstream theFile;
-		theFile.open(name, std::ofstream::app);
-		theFile << receivedData;
-		theFile.close();
-	}
-	else
-	{
-		std::cout << "is same" << std::endl;
-		int namesIndex = 0;
-		for (size_t namesIndex = 0; namesIndex < fdsFileNames.size(); namesIndex++)
+		if (indexB < boundaries.size())
 		{
-			if (fdsIndex == fdsFileNames.at(namesIndex).first)
-			{
-				break;
-			}
+			std::cout << "is smaller" << std::endl;
+			name = boundaries.at(indexB).first;
 		}
-		std::cout << "name of file = " << fdsFileNames.at(namesIndex).second << std::endl;
-		std::ofstream theFile;
-		theFile.open(fdsFileNames.at(namesIndex).second, std::ofstream::app);
-		theFile << receivedData;
-		theFile.close();
+		else
+		{
+			std::cout << "is same" << std::endl;
+			int namesIndex = 0;
+			for (size_t namesIndex = 0; namesIndex < fdsFileNames.size(); namesIndex++)
+			{
+				if (fdsIndex == fdsFileNames.at(namesIndex).first)
+				{
+					break;
+				}
+			}
+			name = fdsFileNames.at(namesIndex).second;
+		}
+	}
+	std::cout << "name of file = " << name << std::endl;
+	std::ofstream theFile;
+	theFile.open(name, std::ofstream::app);
+	if (theFile.is_open() == 0)
+	{
+		std::cout << "NAME is wrong" << std::endl;
+		// handle this better
+		theFile.open("www/files/turha.txt");
+	}
+	theFile << receivedData;
+	theFile.close();
+	// remove boundary from list if the last boundary has been found
+	if (ended)
+	{
+		boundaries.erase(boundaries.begin() + indexB);
 	}
 }
 

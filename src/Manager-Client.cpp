@@ -66,18 +66,18 @@ void Manager::handleClientCommunication(size_t index)
 				bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 			}
 		}
-		if (receivedData.find("Expect:") != std::string::npos)
-		{
-			std::string response = "HTTP/1.1 413 Request Entity Too Large\r\n\r\n";
-			send(fds[index].fd, response.c_str(), response.size(), 0);
-			std::cout << "File too big" << std::endl;
-			close(fds[index].fd);
-			fds.erase(fds.begin() + index);
-			fdsTimestamps.erase(fdsTimestamps.begin() + index);
-			cgiOnGoing.erase(cgiOnGoing.begin() + index);
-			index--;
-			return;
-		}
+		// if (receivedData.find("Expect:") != std::string::npos)
+		// {
+		// 	std::string response = "HTTP/1.1 413 Request Entity Too Large\r\n\r\n";
+		// 	send(fds[index].fd, response.c_str(), response.size(), 0);
+		// 	std::cout << "File too big" << std::endl;
+		// 	close(fds[index].fd);
+		// 	fds.erase(fds.begin() + index);
+		// 	fdsTimestamps.erase(fdsTimestamps.begin() + index);
+		// 	cgiOnGoing.erase(cgiOnGoing.begin() + index);
+		// 	index--;
+		// 	return;
+		// }
 
 		// If cgi is ongoing, throw out previous request, start new one if necessary
 		fdsTimestamps[index] = time(NULL);
@@ -98,6 +98,17 @@ void Manager::handleClientCommunication(size_t index)
 		// if (!clientStates[fds[index].fd].transferInProgress)
 		// {
 		// clientStates[fds[index].fd].transferInProgress = true;
+		size_t indexB;
+		// bool boundaryFound = false;
+		std::cout << boundaries.size() << " is size " << std::endl;
+		for (indexB = 0; indexB < boundaries.size(); indexB++)
+		{
+			std::cout << "Boundary :" << boundaries.at(indexB).second << std::endl;
+			if (receivedData.find(boundaries.at(indexB).second) != std::string::npos)
+			{
+				// boundaryFound = true;
+			}
+		}
 		if (receivedData.find("GET") != std::string::npos)
 		{
 			std::cout << "GETTING" << std::endl;
@@ -121,20 +132,24 @@ void Manager::handleClientCommunication(size_t index)
 			std::cout << "OTHER METHOD" << std::endl;
 			handleOther(receivedData, fds, index);
 		}
-		else
+		else// if (boundaryFound)
 		{
+			std::cout << "CONT" << std::endl;
 			handleContinue(receivedData, index);
 		}
-		// }
 		// else
 		// {
-		// 	handleContinue(index);
-		// 	// 	// check if file is complete, then set tranferinprogress to false.
-		// 	std::cerr << "time now : " << time(NULL) << " and timestamp : " << fdsTimestamps.at(index) << std::endl;
-		// 	if (fdsTimestamps[index] - time(NULL) > REQUEST_TIMEOUT)
-		// 	{
-		// 		handleTimeout(index);
-		// 	}
+		// 	serverList.at(0).log(receivedData);
+		// 	std::string response = "HTTP/1.1 400 Bad Request\r\n\r\n";
+		// 	send(fds[index].fd, response.c_str(), response.size(), 0);
+		// 	std::cout << "Bad Request" << std::endl;
+		// 	// close(fds[index].fd);
+		// 	// fds.erase(fds.begin() + index);
+		// 	// fdsTimestamps.erase(fdsTimestamps.begin() + index);
+		// 	// cgiOnGoing.erase(cgiOnGoing.begin() + index);
+		// 	// index--;
+		// 	return;
+		// }
 		// }
 	}
 }
