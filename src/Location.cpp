@@ -2,7 +2,7 @@
 #include "ws_functions.hpp"
 
 Location::Location(const std::string path) : ConfigSection("location"), 
-	_path(path), _get(false), _post(false), _del(false), _dir_list(false), _matched_cgi(std::pair("", "")) {}
+	_path(path), _get(false), _post(false), _del(false), _rewrite(""), _dir_list(false), _matched_cgi(std::pair("", "")) {}
 
 // ! no methods will be available if no methods specified!
 void Location::initialize() {
@@ -64,6 +64,7 @@ std::string Location::getLastCGIPath() { return _matched_cgi.second; }
 bool Location::directoryIndexAllowed() { return _dir_list; }
 std::string Location::defaultIndexFile() { return _index_file; }
 std::string Location::getRootPath() { return _rootpath; }
+std::string Location::getRewrite() { return _rewrite; }
 
 bool Location::methodAvailable(const int method) {
 	if (method != REQ_GET && method != REQ_POST && method != REQ_DEL)

@@ -24,16 +24,14 @@ private:
 	std::vector<struct pollfd> fds;
 	std::vector<int> fdsTimestamps;
 	std::vector<int> cgiOnGoing;
-	std::vector<std::string> magic; // Does nothing, but removing it breaks the code
-	std::vector<std::pair<std::string, std::string>> boundaries;
+	std::vector<std::string> magic; //Does nothing, but removing it breaks the code
+	std::vector<std::pair<std::string, std::string> > boundaries;
 	std::vector<int> boundaryUsed;
 	std::vector<std::pair<int, std::string>> fdsFileNames;
 
 public:
 	Manager();
 	~Manager();
-	// Manager(const Manager &var);
-	// Manager &operator=(const Manager &var);
 
 	void setupPollingforServers();
 
@@ -62,7 +60,7 @@ public:
 	int readConfig(ConfigParser &config_parser);
 
 	Server &prepareServer(int const method, std::string file_path, std::vector<struct pollfd> fds, int i, Response &response);
-	bool prepareFailure(int code, std::vector<struct pollfd> fds, int i);
+	bool prepareFailure(Response const &response, std::vector<struct pollfd> fds, int i);
 	void handleGet(std::string receivedData, std::vector<struct pollfd> fds, int i);
 	void handlePost(std::string receivedData, std::vector<struct pollfd> fds, size_t i);
 	void handleDelete(std::string receivedData, std::vector<struct pollfd> fds, int i);

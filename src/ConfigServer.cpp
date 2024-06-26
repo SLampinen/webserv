@@ -103,11 +103,14 @@ Response ConfigServer::resolveRequest(int const method, std::string const &reque
 		return (Response(404, getErrorPage(404)));
 	if (!_locations.at(match_index).methodAvailable(method))
 		return (Response(405, getErrorPage(405)));
+	Location &loc = _locations.at(match_index);
+	if (!loc.getRewrite().empty())
+		return (Response(302, getErrorPage(302), loc.getRewrite() + request_path.substr(loc._path.size(), std::string::npos)));
 	_last_matched_location = match_index;
-	std::string root_path = _locations.at(match_index).makeRootPath(request_path);
+	std::string root_path = loc.makeRootPath(request_path);
 	if (request_path.back() == '/' && root_path.back() == '/')
 		return (Response(RES_DIR, root_path));
-	if (std::string cgi_path; _locations.at(match_index).checkCGI(request_path, cgi_path))
+	if (std::string cgi_path; loc.checkCGI(request_path, cgi_path))
 		return (Response(RES_CGI, root_path, cgi_path));
 	return (Response(RES_FILE, root_path));
 }

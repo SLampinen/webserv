@@ -24,6 +24,8 @@ std::string Server::getServerName(void) { return this->servName; }
 size_t Server::getClientBodySize(void) { return this->client_max_body_size; }
 std::string Server::getCGIPath(void) { return this->cgiPath; }
 std::string Server::getCGIExt(void) { return this->cgiExt; }
+bool Server::dirIndexAllowed() { return directoryIndex; }
+
 
 std::string Server::getMIMEType(std::string fileExt)
 {
@@ -86,6 +88,26 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	std::string buffer;
 	std::stringstream responseStream;
 
+	std::cout << "buildHTTPresponse:[" << fileName << "][" << fileExt << "]" << std::endl;
+	// if empty, aka front page
+	if (false && fileName.empty())
+	{
+		std::string fileFull;
+		fileFull.append(rootDir);
+		fileFull.append(indexFile);
+		open(fileFull.data(), O_RDONLY);
+		std::ifstream file(fileFull);
+		if (file.is_open() == 0)
+		{
+			return makeHeader(404, 0);
+		}
+		std::getline(file, buffer, '\0');
+		header = makeHeader(200, buffer.size());
+		response.append(header);
+		response.append(buffer);
+		return response;
+	}
+
 	std::string possibleDir = rootDir;
 	possibleDir.append(fileName);
 	DIR *dir = opendir(possibleDir.c_str());
@@ -123,6 +145,7 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	fileFull.append(rootDir);
 	fileFull.append(fileName);
 	fileFull.append(fileExt);
+	std::cout << "buildHTTPresponse:[" << fileFull << "]" << std::endl;
 	open(fileFull.data(), O_RDONLY);
 	std::ifstream file(fileFull);
 	if (file.is_open() == 0)

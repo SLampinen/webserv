@@ -23,6 +23,7 @@ class Location : public ConfigSection {
 		bool directoryIndexAllowed();
 		std::string defaultIndexFile();
 		std::string getRootPath();
+		std::string getRewrite();
 		bool methodAvailable(const int method);
 		
 		const std::string _path;
