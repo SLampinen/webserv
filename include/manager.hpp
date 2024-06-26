@@ -33,6 +33,7 @@ private:
 	std::vector<int> cgiOnGoing;
 	std::vector<std::string> magic;//Does nothing, but removing it breaks the code
 	std::vector<std::pair<std::string, std::string> > boundaries;
+	std::vector<int> boundaryUsed;
 	std::vector<std::pair<int, std::string> > fdsFileNames;
 public:
 	Manager();

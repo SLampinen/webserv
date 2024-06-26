@@ -285,7 +285,11 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 			handleUpload(rawData, boundary, fds, i);
 		}
 		else
+		{
 			boundaries.push_back(std::make_pair("", boundary));
+			boundaryUsed.push_back(0);
+
+		}
 	}
 	else
 	{
@@ -441,8 +445,9 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	std::cout << "name = " << name << std::endl;
 
 	boundaries.push_back(std::make_pair(name, boundary));
+	boundaryUsed.push_back(0);
 
-	theFile.open(name);
+	theFile.open(name, std::ofstream::trunc);
 	if (!theFile.is_open())
 	{
 		// If file cannot be opened, send an error response
@@ -491,6 +496,7 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	if (lastBoundary)
 	{
 		boundaries.pop_back();
+		boundaryUsed.pop_back();
 	}
 	
 	// Send a success response
@@ -649,7 +655,12 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 	}
 	std::cout << "name of file = " << name << std::endl;
 	std::ofstream theFile;
-	theFile.open(name, std::ofstream::app);
+	std::cout << "used : " <<  boundaryUsed.at(indexB) << std::endl; 
+	if (boundaryUsed.at(indexB) == 1)
+		theFile.open(name, std::ofstream::app);
+	else
+		theFile.open(name, std::ofstream::trunc);
+	boundaryUsed.at(indexB) = 1;
 	if (theFile.is_open() == 0)
 	{
 		std::cout << "NAME is wrong" << std::endl;
@@ -662,6 +673,7 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 	if (ended)
 	{
 		boundaries.erase(boundaries.begin() + indexB);
+		boundaryUsed.erase(boundaryUsed.begin() + indexB);
 		std::string body = "File uploaded successfully";
 		std::string response = serverList.at(serverIndex.at(currentServer).second).makeHeader(200, body.size());
 		response.append(body);
