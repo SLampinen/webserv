@@ -654,6 +654,10 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 	if (ended)
 	{
 		boundaries.erase(boundaries.begin() + indexB);
+		std::string body = "File uploaded successfully";
+		std::string response = serverList.at(serverIndex.at(currentServer).second).makeHeader(200, body.size());
+		response.append(body);
+		send(fds[fdsIndex].fd, response.c_str(), response.length(), 0);
 	}
 }
 
