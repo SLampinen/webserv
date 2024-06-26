@@ -417,7 +417,12 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 		name = receivedData.substr(start, end - start);
 	// std::cerr << "THE data = " << receivedData << std::endl;
 	std::cout << "UPLOAD name[" << name << "]" << std::endl;
-
+	bool hasAName = true;
+	if (name.empty())
+	{
+		hasAName = false;
+	}
+	
 	std::ofstream theFile;
 	std::string root = serverList.at(serverIndex.at(index).second).getRootDir().append("files/");
 	name = root.append(name);
@@ -442,11 +447,14 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	{
 		// If file cannot be opened, send an error response
 		std::cout << "Is not open" << std::endl;
-		std::string response;
-		std::stringstream responseStream;
-		responseStream << "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 38\r\n\r\nUploading failed due to unknown reason";
-		response = responseStream.str();
-		send(fds[i].fd, response.c_str(), response.length(), 0);
+		if (hasAName)
+		{
+			std::string response;
+			std::stringstream responseStream;
+			responseStream << "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 38\r\n\r\nUploading failed due to unknown reason";
+			response = responseStream.str();
+			send(fds[i].fd, response.c_str(), response.length(), 0);
+		}
 		return;
 	}
 
@@ -469,7 +477,7 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 			lastBoundary = true;
 		}
 		
-		std::cout << "The post-boundary-data : " << receivedData.substr(end + boundary.size()) << std::endl;
+		// std::cout << "The post-boundary-data : " << receivedData.substr(end + boundary.size()) << std::endl;
 		std::string fileContent = receivedData.substr(start, end - start);
 		if (end > start)
 			theFile << fileContent;
@@ -585,7 +593,7 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 				}
 				else
 				{
-					std::cout << "The post-boundary-data : " << receivedData.substr(dataEnd + boundaries.at(indexB).second.size()) << std::endl;
+					// std::cout << "The post-boundary-data : " << receivedData.substr(dataEnd + boundaries.at(indexB).second.size()) << std::endl;
 					if (receivedData.at(dataEnd + boundaries.at(indexB).second.size()) == '-' && receivedData.at(dataEnd + boundaries.at(indexB).second.size() + 1) == '-')
 					{
 						std::cout << "Ending boundary found" << std::endl;
@@ -602,7 +610,7 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 				dataEnd = receivedData.find(boundaries.at(indexB).second, dataBegin + 1);
 				if (dataEnd != std::string::npos)
 				{
-					std::cout << "The post-boundary-data : " << receivedData.substr(dataEnd + boundaries.at(indexB).second.size()) << std::endl;
+					// std::cout << "The post-boundary-data : " << receivedData.substr(dataEnd + boundaries.at(indexB).second.size()) << std::endl;
 					if (receivedData.at(dataEnd + boundaries.at(indexB).second.size()) == '-' && receivedData.at(dataEnd + boundaries.at(indexB).second.size() + 1) == '-')
 					{
 						std::cout << "Ending boundary found" << std::endl;
