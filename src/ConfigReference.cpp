@@ -152,13 +152,3 @@ std::string ConfigReference::typeCharToString(const char c) {
 	else if (c == 'T') return "text";
 	return "";
 }
-
-void ConfigReference::print() {
-	std::cout << "printing configref:" << std::endl;
-	for (std::vector<std::string> &ref : _references) {
-		std::cout << "[";
-		for (std::string &item : ref)
-			std::cout << item << ":";
-		std::cout << "]" <<std::endl;
-	}
-}

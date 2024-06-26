@@ -1,15 +1,13 @@
-#include <iostream> // for debug
 #include "ws_functions.hpp"
 #include "ConfigParser.hpp"
 
 ConfigParser::ConfigParser(const std::string &filepath) : _ref("cfg/config_defaults") ,_cfg(filepath) {
 	_config_sections.push_back(ConfigSection(GLOBAL));
-	std::cout << "ConfigParser created" << std::endl;
 }
 
 ConfigParser::~ConfigParser() {}
 
-bool ConfigParser::startParse() { std::cout << "CP.STARTPARSE" << std::endl;
+bool ConfigParser::startParse() {
 	do {
 		_cfg.processLine();
 		_ref.checkLine(_cfg.getVector());
@@ -69,10 +67,4 @@ bool ConfigParser::storeConfigLine() {
 	section.addConfigLine(_cfg.getVector());
 	_config_sections.push_back(section);
 	return true;
-}
-
-void ConfigParser::printCS() {
-	for (size_t i = 0; i < _config_sections.size(); i++)
-		_config_sections.at(i).printAll();
-	std::cout << "END" << std::endl;
 }

@@ -50,9 +50,6 @@ class ConfigServer : public ConfigSection {
 			private:
 			const std::string _msg;
 		};
-	public: //debug
-		void printData();
-		std::string const printId() const;
 };
 
 #endif

@@ -53,14 +53,12 @@ bool ConfigFile::processLine() {
 	ws_get_next_nonws(_line, pos);
 	_words.push_back(word);
 	while (ws_get_next_nonws(_line, pos) && !ws_endl(_line, pos)) {
-		//std::cout << "EXISTING WORDS: " << _words.size() << " POS: " << pos << " REMAINING[" << _line.substr(pos, std::string::npos) << "]" << std::endl;
 		if (!processParam(pos) && !ws_endl(_line, pos))
 			throw ConfigFileException("Error processing arguments at line: " + _words.at(0));
 		pos++;
 	}
 	if (_words.back() == "{")
 		_sections.push_back(_words.at(0));
-	//return (std::cout << "FINAL WORDS SIZE: " << _words.size() << std::endl, true);
 	return true;
 }
 
@@ -97,13 +95,4 @@ bool ConfigFile::processParam(size_t &pos) {
 		throw ConfigFileException("Unmatched quotes at keyword: " + _words.at(0));
 	_words.push_back(param);
 	return true;
-}
-
-void ConfigFile::print() {
-	for (const std::string &s : _sections)
-		std::cout << "/" << s;
-	std::cout << ":";
-	for (const std::string &s : _words)
-		std::cout << "[" << s << "]";
-	std::cout << std::endl;
 }

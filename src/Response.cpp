@@ -1,6 +1,6 @@
 #include "Response.hpp"
 
-Response::Response() : _responsecode(RES_INVALID) {} // invalid, only used for placeholder
+Response::Response() : _responsecode(RES_INVALID) {}
 
 Response::Response(const std::string filepath) : _responsecode(RES_FILE), _path(filepath) {}
 

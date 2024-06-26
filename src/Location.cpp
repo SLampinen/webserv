@@ -4,6 +4,7 @@
 Location::Location(const std::string path) : ConfigSection("location"), 
 	_path(path), _get(false), _post(false), _del(false), _dir_list(false), _matched_cgi(std::pair("", "")) {}
 
+// ! no methods will be available if no methods specified!
 void Location::initialize() {
 	size_t idx = 0;
 	if (doesLineExist("methods", idx)) {
@@ -17,8 +18,7 @@ void Location::initialize() {
 			else
 				throw std::runtime_error("Invalid method specified in location!");
 		}
-	} 
-	// else { _get = true; } // ! removed GET by default, using none by default
+	}
 	if (doesLineExist("root", idx))
 		_rootpath = getIndexArg(idx, 1);
 	if (doesLineExist("rewrite", idx))
@@ -72,18 +72,4 @@ bool Location::methodAvailable(const int method) {
 	if (_post && method == REQ_POST) return true;
 	if (_del && method == REQ_DEL) return true;
 	return false;
-}
-
-void Location::printData() {
-	std::cout << "\e[0;33mLocation.printData() : \e[0;93m" << _path << std::endl;
-	std::cout << "\e[0;33mMethods: ";
-	if (_get) std::cout << "GET ";
-	if (_post) std::cout << "POST ";
-	if (_del) std::cout << "DELETE";
-	std::cout << std::endl;
-	if (!_rewrite.empty()) std::cout << "Rewrite: " << _rewrite << std::endl;
-	if (!_rootpath.empty()) std::cout << "Root: " << _rootpath << std::endl;
-	std::cout << "Directory listing: " << std::boolalpha << _dir_list << std::endl;
-	if (!_index_file.empty()) std::cout << "Dir index file: " << _index_file << std::endl;
-	std::cout << "\e[0m";
 }

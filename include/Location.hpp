@@ -6,16 +6,6 @@
 # include <map>
 # include "ConfigSection.hpp"
 # include "Request.hpp"
-# include <iostream> //debug
-
-// location /
-//		http_methods GET POST DEL
-//		http_redirection
-//		root
-//		directory_list y/n
-//		default_index
-//		request_method
-//		cgi_extension .php  .py { }
 
 class Location : public ConfigSection {
 	public:
@@ -45,9 +35,6 @@ class Location : public ConfigSection {
 		std::string _index_file;
 		std::map<std::string, std::string> _cgi;
 		std::pair<std::string, std::string> _matched_cgi;
-
-	public: //debug
-		void printData();
 };
 
 #endif

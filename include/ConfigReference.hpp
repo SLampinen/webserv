@@ -4,10 +4,9 @@
 # include <string>
 # include <fstream>
 # include <vector>
-# include <iostream> // ! debug
-# include "ws_functions.hpp" // ? might be unnecessary
+# include "ws_functions.hpp"
 
-# define	GLOBAL "global" // config section name for top level
+# define GLOBAL "global" // config section name for top level
 
 class ConfigReference {
 	public:
@@ -38,8 +37,6 @@ class ConfigReference {
 			private:
 			const std::string _msg;
 		};
-	public: // ! debug
-		void print();
 };
 
 #endif

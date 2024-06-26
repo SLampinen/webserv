@@ -4,16 +4,14 @@
 # include <string>
 # include <fstream>
 # include <vector>
-# include <iostream> // ! debug
 # include "ConfigReference.hpp" // for GLOBAL definition
-# include "ws_functions.hpp" // ? might be unnecessary
+# include "ws_functions.hpp"
 
 class ConfigFile {
 	public:
 		ConfigFile(const std::string &config_file);
 		~ConfigFile();
 	
-		// ! check pub priv
 		bool emptyLine();
 		bool nextLine();
 		bool processLine();
@@ -40,8 +38,6 @@ class ConfigFile {
 			private:
 			const std::string _msg;
 		};
-	public: // ! debug
-		void print();
 };
 
 #endif

@@ -23,8 +23,6 @@ class ConfigSection {
 		const std::string _empty = "";
 	private:
 		std::vector<std::vector<std::string> > _config_lines;
-	public: // ! debug
-		void printAll();
 };
 
 #endif
