@@ -10,6 +10,7 @@
 # include <map>
 # include <netinet/in.h>
 # include <poll.h>
+# include <signal.h>
 # include <sstream>
 # include <stdio.h>
 # include <stdlib.h>

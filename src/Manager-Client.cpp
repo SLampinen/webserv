@@ -66,18 +66,18 @@ void Manager::handleClientCommunication(size_t index)
 				bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 			}
 		}
-		if (receivedData.find("Expect:") != std::string::npos)
-		{
-			std::string response = "HTTP/1.1 413 Request Entity Too Large\r\n\r\n";
-			send(fds[index].fd, response.c_str(), response.size(), 0);
-			std::cout << "File too big" << std::endl;
-			close(fds[index].fd);
-			fds.erase(fds.begin() + index);
-			fdsTimestamps.erase(fdsTimestamps.begin() + index);
-			cgiOnGoing.erase(cgiOnGoing.begin() + index);
-			index--;
-			return;
-		}
+		// if (receivedData.find("Expect:") != std::string::npos)
+		// {
+		// 	std::string response = "HTTP/1.1 413 Request Entity Too Large\r\n\r\n";
+		// 	send(fds[index].fd, response.c_str(), response.size(), 0);
+		// 	std::cout << "File too big" << std::endl;
+		// 	close(fds[index].fd);
+		// 	fds.erase(fds.begin() + index);
+		// 	fdsTimestamps.erase(fdsTimestamps.begin() + index);
+		// 	cgiOnGoing.erase(cgiOnGoing.begin() + index);
+		// 	index--;
+		// 	return;
+		// }
 
 		// If cgi is ongoing, throw out previous request, start new one if necessary
 		fdsTimestamps[index] = time(NULL);
@@ -95,9 +95,6 @@ void Manager::handleClientCommunication(size_t index)
 				pids.erase(pids.begin() + k);
 			}
 		}
-		// if (!clientStates[fds[index].fd].transferInProgress)
-		// {
-		// clientStates[fds[index].fd].transferInProgress = true;
 		if (receivedData.find("GET") != std::string::npos)
 		{
 			std::cout << "GETTING" << std::endl;
@@ -123,18 +120,8 @@ void Manager::handleClientCommunication(size_t index)
 		}
 		else
 		{
+			std::cout << "CONT" << std::endl;
 			handleContinue(receivedData, index);
 		}
-		// }
-		// else
-		// {
-		// 	handleContinue(index);
-		// 	// 	// check if file is complete, then set tranferinprogress to false.
-		// 	std::cerr << "time now : " << time(NULL) << " and timestamp : " << fdsTimestamps.at(index) << std::endl;
-		// 	if (fdsTimestamps[index] - time(NULL) > REQUEST_TIMEOUT)
-		// 	{
-		// 		handleTimeout(index);
-		// 	}
-		// }
 	}
 }
