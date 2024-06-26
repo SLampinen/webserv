@@ -1,7 +1,7 @@
 #include "ws_functions.hpp"
 #include "ConfigServer.hpp"
 
-ConfigServer::ConfigServer() : ConfigSection("Configserver"), _max_client_body_size(0), _last_matched_location(std::string::npos) {}
+ConfigServer::ConfigServer() : ConfigSection("server"), _max_client_body_size(std::string::npos), _last_matched_location(std::string::npos) {}
 
 // interprets values from the base ConfigSection class and stores them in ConfigServer variables
 void ConfigServer::initialize() {
@@ -10,7 +10,7 @@ void ConfigServer::initialize() {
 		for (size_t i = 1; !getIndexArg(idx, i).empty(); i++) {
 			size_t const new_port = std::stoi(getIndexArg(idx, i));
 			if (matchPort(new_port))
-				throw ConfigServerException("Duplicate ports in Configserver");
+				throw ConfigServerException("Duplicate ports in server");
 			if (new_port == 0 || new_port > 65535)
 				throw ConfigServerException("Invalid port specified");
 			_ports.push_back(new_port);
@@ -19,13 +19,13 @@ void ConfigServer::initialize() {
 		first = 0;
 	}
 	if (_ports.empty()) _ports.push_back(80);
-	if (doesLineExist("Configserver_name", idx)) {
+	if (doesLineExist("server_name", idx)) {
 		for (size_t i = 1; !getIndexArg(idx, i).empty(); i++)
 			_server_names.push_back(getIndexArg(idx, i));
 	}
 	for (const std::string &s : _server_names)
 		if (s == "*" && _server_names.size() != 1)
-			throw ConfigServerException("ConfigServer name wildcard '*' used, but other Configserver names also present");
+			throw ConfigServerException("ConfigServer name wildcard '*' used, but other server names also present");
 	if (doesLineExist("error_page", idx)) {
 		addErrorPage(getIndexArg(idx, 1), getIndexArg(idx, 2));
 		size_t previous_idx = idx;

@@ -17,9 +17,8 @@ void Location::initialize() {
 			else
 				throw std::runtime_error("Invalid method specified in location!");
 		}
-	} else {
-		_get = true;
-	}
+	} 
+	// else { _get = true; } // ! removed GET by default, using none by default
 	if (doesLineExist("root", idx))
 		_rootpath = getIndexArg(idx, 1);
 	if (doesLineExist("rewrite", idx))
