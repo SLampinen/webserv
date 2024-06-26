@@ -44,20 +44,23 @@ void Manager::handleClientCommunication(size_t index)
 		std::string receivedData(buffer, bytesReceived);
 		// bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 
-		if (receivedData.find("Content-Length:") != std::string::npos && bytesReceived != -1)
-		{
-			std::string contentLength = receivedData.substr(receivedData.find("Content-Length:") + 16);
-			contentLength = contentLength.substr(0, contentLength.find("\r\n"));
-			size_t length = std::stoi(contentLength);
-			bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
-			while (receivedData.size() < length)
-			{
-				std::string rest(buffer, bytesReceived);
-				receivedData.append(rest);
-				length -= bytesReceived;
-				bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
-			}
-		}
+		// if (receivedData.find("Content-Length:") != std::string::npos && bytesReceived != -1)
+		// {
+		// 	std::string contentLength = receivedData.substr(receivedData.find("Content-Length:") + 16);
+		// 	contentLength = contentLength.substr(0, contentLength.find("\r\n"));
+		// 	size_t length = std::stoi(contentLength);
+		// 	bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
+		// 	while (receivedData.size() < length)
+		// 	{
+		// 		if (bytesReceived > 0)
+		// 		{
+		// 			std::string rest(buffer, bytesReceived);
+		// 			receivedData.append(rest);
+		// 		}
+		// 		length -= bytesReceived;
+		// 		bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
+		// 	}
+		// }
 		// while (bytesReceived > 0)
 		// {
 		// 	std::string rest(buffer, bytesReceived);
