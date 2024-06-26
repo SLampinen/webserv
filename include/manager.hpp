@@ -48,6 +48,11 @@ public:
 
 	void handlePollEvent(size_t index);
 
+	bool checkCommunication(int bytesReceived, size_t index);
+
+
+	void closeConnection(size_t &index, std::string message);
+
 	void closeInactiveConnections(size_t index);
 
 	void run(std::string configFile);
@@ -66,7 +71,6 @@ public:
 	void handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i);
 	void handleChunk(std::string receivedData, std::vector<struct pollfd> fds, int fdsIndex, int boundariesIndex);
 	void handleContinue(std::string receivedData, int fdsIndex);
-	void handleTimeout(int fdsIndex);
 };
 
 #endif
