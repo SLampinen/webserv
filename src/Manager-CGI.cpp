@@ -31,7 +31,9 @@ void Manager::handleWorkDone(size_t index, int k)
 	fullName.append(temp);
 	std::string response = serverList.at(serverIndex.at(k).second).buildHTTPResponse(temp, "");
 	unlink(fullName.c_str());
-	send(fds[index].fd, response.c_str(), response.length(), 0);
+	size_t sendMessage = send(fds[index].fd, response.c_str(), response.length(), 0);
+	if (!checkCommunication(sendMessage, index))
+		return;
 	cgiOnGoing[index] = 0;
 	pids.erase(pids.begin() + k);
 }

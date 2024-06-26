@@ -14,13 +14,6 @@
 class Manager
 {
 private:
-
-	// struct FileTransferState
-	// {
-	// 	std::unique_ptr<std::ofstream> file;
-	// 	bool transferInProgress;
-	// };
-	// std::map<int, FileTransferState> clientStates;
 	std::vector<Server> serverList;
 	std::vector<ConfigServer> configserverList;
 	ConfigSection default_responses;
@@ -38,8 +31,8 @@ private:
 public:
 	Manager();
 	~Manager();
-	//Manager(const Manager &var);
-	//Manager &operator=(const Manager &var);
+	// Manager(const Manager &var);
+	// Manager &operator=(const Manager &var);
 
 	void setupPollingforServers();
 
@@ -56,6 +49,11 @@ public:
 	void handleCgiWork(size_t index);
 
 	void handlePollEvent(size_t index);
+
+	bool checkCommunication(int bytesReceived, size_t index);
+
+
+	void closeConnection(size_t &index, std::string message);
 
 	void closeInactiveConnections(size_t index);
 
@@ -75,7 +73,6 @@ public:
 	void handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i);
 	void handleChunk(std::string receivedData, std::vector<struct pollfd> fds, int fdsIndex, int boundariesIndex);
 	void handleContinue(std::string receivedData, int fdsIndex);
-	void handleTimeout(int fdsIndex);
 };
 
 #endif
