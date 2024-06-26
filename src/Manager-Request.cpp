@@ -481,6 +481,11 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 			theFile.open(name, std::ofstream::trunc);
 		boundaryUsed.at(indexB) = 1;
 	}
+	else
+	{
+		boundaryUsed.at(indexB - 1) = 1;
+		theFile.open(name, std::ofstream::app);
+	}
 	if (theFile.is_open() == 0)
 	{
 		// handle this better
