@@ -460,11 +460,16 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	std::cout << "start = " << start << std::endl;
 	start = receivedData.find_first_not_of("\r\n", start);
 	end = receivedData.find(boundary, start);
-	// end = receivedData.find_last_of("\r\n", end);
+	bool lastBoundary = false;
 	if (end != std::string::npos)
 	{
 		std::cout << "Boundary found, this is the end of firefox content" << std::endl;
-		end = receivedData.find_last_of("\r\n", end) - 1;
+		if (receivedData.at(end + boundary.size()) == '-' && receivedData.at(end + boundary.size() + 1) == '-')
+		{
+			lastBoundary = true;
+		}
+		
+		std::cout << "The post-boundary-data : " << receivedData.substr(end + boundary.size()) << std::endl;
 		std::string fileContent = receivedData.substr(start, end - start);
 		if (end > start)
 			theFile << fileContent;
@@ -475,7 +480,11 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 		theFile << fileContent;
 	}
 	theFile.close();
-
+	if (lastBoundary)
+	{
+		boundaries.pop_back();
+	}
+	
 	// Send a success response
 	std::string responsestr;
 	std::stringstream responseStream;
@@ -551,6 +560,7 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 	std::string name;
 	size_t dataBegin = 0;
 	size_t dataEnd = 0;
+	bool ended = false;
 	for (indexB = 0; indexB < boundaries.size(); indexB++)
 	{
 		std::cout << "looking for boundary: " << boundaries.at(indexB).second << std::endl;
@@ -573,6 +583,15 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 					dataEnd = receivedData.size() - 1;
 					std::cout << "NPOSSED" << std::endl;
 				}
+				else
+				{
+					std::cout << "The post-boundary-data : " << receivedData.substr(dataEnd + boundaries.at(indexB).second.size()) << std::endl;
+					if (receivedData.at(dataEnd + boundaries.at(indexB).second.size()) == '-' && receivedData.at(dataEnd + boundaries.at(indexB).second.size() + 1) == '-')
+					{
+						std::cout << "Ending boundary found" << std::endl;
+						ended = true;
+					}
+				}
 				receivedData = receivedData.substr(dataBegin, dataEnd - dataBegin);
 				std::cout << "dbegin = " << dataBegin << " and End = " << dataEnd << std::endl;
 			}
@@ -580,6 +599,17 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 			{
 				// firefox
 				std::cout << "firefox " << std::endl;
+				dataEnd = receivedData.find(boundaries.at(indexB).second, dataBegin + 1);
+				if (dataEnd != std::string::npos)
+				{
+					std::cout << "The post-boundary-data : " << receivedData.substr(dataEnd + boundaries.at(indexB).second.size()) << std::endl;
+					if (receivedData.at(dataEnd + boundaries.at(indexB).second.size()) == '-' && receivedData.at(dataEnd + boundaries.at(indexB).second.size() + 1) == '-')
+					{
+						std::cout << "Ending boundary found" << std::endl;
+						ended = true;
+					}
+
+				}
 				receivedData = receivedData.substr(0, receivedData.find(boundaries.at(indexB).second));
 				// receivedData = receivedData.substr(0, receivedData.find_last_of("\r\n") - 1);
 			}
@@ -595,6 +625,19 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 			std::cout << "is smaller" << std::endl;
 			name = boundaries.at(indexB).first;
 		}
+		else
+		{
+			std::cout << "is same" << std::endl;
+			int namesIndex = 0;
+			for (size_t namesIndex = 0; namesIndex < fdsFileNames.size(); namesIndex++)
+			{
+				if (fdsIndex == fdsFileNames.at(namesIndex).first)
+				{
+					break;
+				}
+			}
+			name = fdsFileNames.at(namesIndex).second;
+		}
 	}
 	std::cout << "name of file = " << name << std::endl;
 	std::ofstream theFile;
@@ -607,30 +650,11 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 	}
 	theFile << receivedData;
 	theFile.close();
-	// else
-	// {
-	// 	std::cout << "is same" << std::endl;
-	// 	int namesIndex = 0;
-	// 	for (size_t namesIndex = 0; namesIndex < fdsFileNames.size(); namesIndex++)
-	// 	{
-	// 		if (fdsIndex == fdsFileNames.at(namesIndex).first)
-	// 		{
-	// 			break;
-	// 		}
-	// 	}
-	// 	name = fdsFileNames.at(namesIndex).second;
-	// 	std::cout << "name of file = " << name << std::endl;
-	// 	std::ofstream theFile;
-	// 	theFile.open(name, std::ofstream::app);
-	// 	if (theFile.is_open() == 0)
-	// 	{
-	// 		std::cout << "NAME is wrong" << std::endl;
-	// 		// handle this better
-	// 		theFile.open("www/files/turha.txt");
-	// 	}
-	// 	theFile << receivedData;
-	// 	theFile.close();
-	// }
+	// remove boundary from list if the last boundary has been found
+	if (ended)
+	{
+		boundaries.erase(boundaries.begin() + indexB);
+	}
 }
 
 void Manager::handleTimeout(int fdsIndex)
