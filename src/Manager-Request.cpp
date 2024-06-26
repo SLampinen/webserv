@@ -42,12 +42,17 @@ Server &Manager::prepareServer(int const method, std::string file_path, std::vec
 }
 
 // resolves 404 and 405 if location did not match (thus server doesn't have necessary information and fails)
-bool Manager::prepareFailure(int code, std::vector<struct pollfd> fds, int i)
+bool Manager::prepareFailure(Response const &response, std::vector<struct pollfd> fds, int i)
 {
-	if (code != 404 && code != 405)
+	std::cout << "prepFail called with code " << response.getType() << std::endl;
+	if (response.getType() != 404 && response.getType() != 405 && response.getType() != 302)
 		return false;
 	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
-	std::string response_data(server.makeHeader(code, 0));
+	std::string response_data(server.makeHeader(response.getType(), 0));
+	if (response.getType() == 302) {
+		std::string insert_location = "\r\nLocation: " + response.getCGIPath();
+		response_data.insert(response_data.find('\n'), insert_location);
+	}
 	return (send(fds[i].fd, response_data.c_str(), response_data.length(), 0), true);
 }
 
@@ -55,9 +60,11 @@ void Manager::handleGet(std::string request_data, std::vector<struct pollfd> fds
 {
 	Response response;
 	Server &server = prepareServer(REQ_GET, getFilePath(request_data), fds, i, response);
-	if (prepareFailure(response.getType(), fds, i)) return;
+	if (prepareFailure(response, fds, i)) return;
 	if (response.getType() == RES_CGI)
 		return (handleCGI(request_data, fds, i));
+	//if (server.dirIndexAllowed() && response.getPath().back() == '/')
+	std::cout << "resp.getPath:" << response.getPath() << std::endl << "httpresponse called with: " << response.getPath().substr(server.getRootDir().size(), std::string::npos);
 	std::string response_data(server.buildHTTPResponse(response.getPath().substr(server.getRootDir().size(), std::string::npos), ""));
 	send(fds[i].fd, response_data.c_str(), response_data.length(), 0);
 }
@@ -129,7 +136,7 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 {
 	Response response;
 	Server &server = prepareServer(REQ_POST, getFilePath(receivedData), fds, i, response); (void)server;
-	if (prepareFailure(response.getType(), fds, i)) return;
+	if (prepareFailure(response, fds, i)) return;
 	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)
@@ -190,7 +197,7 @@ void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> 
 {
 	Response cresponse;
 	Server &server = prepareServer(REQ_DEL, getFilePath(receivedData), fds, i, cresponse); (void)server;
-	if (prepareFailure(cresponse.getType(), fds, i)) return;
+	if (prepareFailure(cresponse, fds, i)) return;
 	for (size_t j = 0; j < serverIndex.size(); j++)
 	{
 		if (serverIndex.at(j).first == fds[i].fd)

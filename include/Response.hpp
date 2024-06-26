@@ -22,9 +22,9 @@ class Response {
 		Response(const int code, const std::string filepath, const std::string cgipath);
 		~Response();
 
-		const int& getType();
-		const std::string &getPath();
-		const std::string &getCGIPath();
+		const int& getType() const;
+		const std::string &getPath() const;
+		const std::string &getCGIPath() const;
 
 		Response &operator=(const Response assign);
 

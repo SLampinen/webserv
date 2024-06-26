@@ -10,11 +10,11 @@ Response::Response(const int code, const std::string filepath, const std::string
 
 Response::~Response() {}
 
-const int &Response::getType() { return _responsecode; }
+const int &Response::getType() const { return _responsecode; }
 
-const std::string &Response::getPath() { return _path; }
+const std::string &Response::getPath() const { return _path; }
 
-const std::string &Response::getCGIPath() { return _cgi_path; }
+const std::string &Response::getCGIPath() const { return _cgi_path; }
 
 Response &Response::operator=(const Response assign) {
 	if (this == &assign)

@@ -40,7 +40,7 @@ public:
 	int getNumOfPorts(void);
 	size_t getClientBodySize(void);
 	std::string getRootDir(void);
-	bool methodAllowed(size_t method);
+	bool dirIndexAllowed();
 
 	void makeSocketList(void);
 
