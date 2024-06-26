@@ -86,25 +86,6 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	std::string buffer;
 	std::stringstream responseStream;
 
-	// if empty, aka front page
-	if (fileName.empty())
-	{
-		std::string fileFull;
-		fileFull.append(rootDir);
-		fileFull.append(indexFile);
-		open(fileFull.data(), O_RDONLY);
-		std::ifstream file(fileFull);
-		if (file.is_open() == 0)
-		{
-			return makeHeader(404, 0);
-		}
-		std::getline(file, buffer, '\0');
-		header = makeHeader(200, buffer.size());
-		response.append(header);
-		response.append(buffer);
-		return response;
-	}
-
 	std::string possibleDir = rootDir;
 	possibleDir.append(fileName);
 	DIR *dir = opendir(possibleDir.c_str());
