@@ -1,22 +1,22 @@
 #include "manager.hpp"
 
-bool Manager::checkReceive(int bytesReceived, size_t index)
+bool Manager::checkCommunication(int communication, size_t index)
 {
-	if (bytesReceived == -1)
+	if (communication == -1)
 	{
-		closeConnections(index, "Recv error: " + std::string(strerror(errno)));
+		closeConnection(index, "Communication error: " + std::string(strerror(errno)));
 		return false;
 	}
-	else if (bytesReceived == 0)
+	else if (communication == 0)
 	{
-		closeConnections(index, "Connection closed by client");
+		closeConnection(index, "Connection closed by client");
 		return false;
 	}
 	else
 		return true;
 }
 
-void Manager::closeConnections(size_t index, std::string message)
+void Manager::closeConnection(size_t &index, std::string message)
 {
 	std::cout << message << std::endl;
 	close(fds[index].fd);
@@ -30,54 +30,54 @@ void Manager::closeConnections(size_t index, std::string message)
 void Manager::closeInactiveConnections(size_t index)
 {
 	if (time(NULL) - fdsTimestamps[index] > CONNECTION_TIMEOUT)
-		closeConnections(index, "Closing connection due to inactivity");
-
+		closeConnection(index, "Closing connection due to inactivity");
 }
 
 void Manager::handleClientCommunication(size_t index)
 {
 	char buffer[1024];
 	int bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
-	if (!checkReceive(bytesReceived, index))
+	if (!checkCommunication(bytesReceived, index))
 		return;
 	else
 	{
-		// if request too large
 		std::string receivedData(buffer, bytesReceived);
-		bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
-		while (bytesReceived > 0)
-		{
-			std::string rest(buffer, bytesReceived);
-			receivedData.append(rest);
-			bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
-		}
+		// bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 
-		if (receivedData.find("Content-Length:") != std::string::npos && bytesReceived != -1)
-		{
-			std::string contentLength = receivedData.substr(receivedData.find("Content-Length:") + 16);
-			contentLength = contentLength.substr(0, contentLength.find("\r\n"));
-			size_t length = std::stoi(contentLength);
-			bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
-			while (receivedData.size() < length)
-			{
-				std::string rest(buffer, bytesReceived);
-				receivedData.append(rest);
-				length -= bytesReceived;
-				bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
-			}
-		}
-		// if (receivedData.find("Expect:") != std::string::npos)
+		// while (bytesReceived > 0)
 		// {
-		// 	std::string response = "HTTP/1.1 413 Request Entity Too Large\r\n\r\n";
-		// 	send(fds[index].fd, response.c_str(), response.size(), 0);
-		// 	std::cout << "File too big" << std::endl;
-		// 	close(fds[index].fd);
-		// 	fds.erase(fds.begin() + index);
-		// 	fdsTimestamps.erase(fdsTimestamps.begin() + index);
-		// 	cgiOnGoing.erase(cgiOnGoing.begin() + index);
-		// 	index--;
-		// 	return;
+		// 	std::string rest(buffer, bytesReceived);
+		// 	receivedData.append(rest);
+		// 	bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
+		// 	std::cout << "\n\nbytes received is:" << bytesReceived << std::endl;
 		// }
+
+		// if (receivedData.find("Content-Length:") != std::string::npos && bytesReceived != -1)
+		// {
+		// 	std::string contentLength = receivedData.substr(receivedData.find("Content-Length:") + 16);
+		// 	contentLength = contentLength.substr(0, contentLength.find("\r\n"));
+		// 	size_t length = std::stoi(contentLength);
+		// 	bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
+		// 	while (receivedData.size() < length)
+		// 	{
+		// 		std::string rest(buffer, bytesReceived);
+		// 		receivedData.append(rest);
+		// 		length -= bytesReceived;
+		// 		bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
+		// 	}
+		// }
+		if (receivedData.find("Expect:") != std::string::npos)
+		{
+			std::string responsestr;
+			std::stringstream responseStream;
+			responseStream << "HTTP/1.1 413 Request Entity Too Large\r\nContent-Length: 24\r\n\r\nRequest Entity Too Large";
+			responsestr = responseStream.str();
+			size_t sendMessage = send(fds[index].fd, responsestr.c_str(), responsestr.length(), 0);
+			if (!checkCommunication(sendMessage, index))
+				return;
+			closeConnection(index, "File too big");
+			return;
+		}
 
 		// If cgi is ongoing, throw out previous request, start new one if necessary
 		fdsTimestamps[index] = time(NULL);
@@ -98,17 +98,6 @@ void Manager::handleClientCommunication(size_t index)
 		// if (!clientStates[fds[index].fd].transferInProgress)
 		// {
 		// clientStates[fds[index].fd].transferInProgress = true;
-		size_t indexB;
-		// bool boundaryFound = false;
-		std::cout << boundaries.size() << " is size " << std::endl;
-		for (indexB = 0; indexB < boundaries.size(); indexB++)
-		{
-			std::cout << "Boundary :" << boundaries.at(indexB).second << std::endl;
-			if (receivedData.find(boundaries.at(indexB).second) != std::string::npos)
-			{
-				// boundaryFound = true;
-			}
-		}
 		if (receivedData.find("GET") != std::string::npos)
 		{
 			std::cout << "GETTING" << std::endl;
@@ -132,7 +121,7 @@ void Manager::handleClientCommunication(size_t index)
 			std::cout << "OTHER METHOD" << std::endl;
 			handleOther(receivedData, fds, index);
 		}
-		else// if (boundaryFound)
+		else
 		{
 			std::cout << "CONT" << std::endl;
 			handleContinue(receivedData, index);

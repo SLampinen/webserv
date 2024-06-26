@@ -48,7 +48,7 @@ void Manager::handlePolling()
 		return;
 	}
 
-	std::cout << "new round " << std::endl;
+	//std::cout << "new round " << std::endl;
 	for (size_t index = 0; index < fds.size(); index++)
 	{
 		handlePollEvent(index);

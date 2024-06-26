@@ -136,7 +136,9 @@ bool Manager::prepareFailure(int code, std::vector<struct pollfd> fds, int i)
 		return false;
 	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
 	std::string response_data(server.makeHeader(code, 0));
-	return (send(fds[i].fd, response_data.c_str(), response_data.length(), 0), true);
+	size_t sendMessage = send(fds[i].fd, response_data.c_str(), response_data.length(), 0);
+	checkCommunication(sendMessage, i);
+	return (true);
 }
 
 // ! added by rleskine, version that works when merged with parsing
@@ -172,7 +174,9 @@ void Manager::handleGet(std::string request_data, std::vector<struct pollfd> fds
 	std::cout << "B2 :res.path" << response.getPath() << std::endl;
 	// std::string response_data(server.buildHTTPResponse(getFilePath(request_data).substr(server.getRootDir().size(), std::string::npos), ""));
 	std::string response_data(server.buildHTTPResponse(response.getPath().substr(server.getRootDir().size(), std::string::npos), ""));
-	send(fds[i].fd, response_data.c_str(), response_data.length(), 0);
+	size_t sendMessage = send(fds[i].fd, response_data.c_str(), response_data.length(), 0);
+	if (!checkCommunication(sendMessage, i))
+		return;
 }
 
 // Handle CGI, prepareServer not needed since it has been run already
@@ -197,7 +201,9 @@ void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds
 		response = serverList.at(serverIndex.at(index).second).makeHeader(418, body.size());
 		response.append(body);
 		cgiOnGoing[i] = 0;
-		send(fds[i].fd, response.c_str(), response.length(), 0);
+		size_t sendMessage = send(fds[i].fd, response.c_str(), response.length(), 0);
+		if (!checkCommunication(sendMessage, i))
+			return;
 	}
 	else
 	{
@@ -213,7 +219,9 @@ void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds
 			response = serverList.at(serverIndex.at(index).second).makeHeader(500, body.size());
 			response.append(body);
 			cgiOnGoing[i] = 0;
-			send(fds[i].fd, response.c_str(), response.length(), 0);
+			size_t sendMessage = send(fds[i].fd, response.c_str(), response.length(), 0);
+			if (!checkCommunication(sendMessage, i))
+				return;
 		}
 		else if (pid == 0)
 		{
@@ -271,7 +279,7 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 		end = receivedData.find_first_of("\r\n ", start);
 		std::string boundary = receivedData.substr(start, end - start);
 		end = receivedData.find(boundary, end);
-		//boundary starts with --
+		// boundary starts with --
 		boundary = "--" + boundary;
 		std::cerr << "Boundary = " << boundary << std::endl;
 
@@ -300,7 +308,9 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 		std::string header = headerStream.str();
 		response.append(header);
 		response.append(buffer);
-		send(fds[i].fd, response.c_str(), response.length(), 0);
+		size_t sendMessage = send(fds[i].fd, response.c_str(), response.length(), 0);
+		if (!checkCommunication(sendMessage, i))
+			return;
 	}
 }
 
@@ -350,7 +360,9 @@ void Manager::handleDelete(std::string receivedData, std::vector<struct pollfd> 
 		response = serverList.at(serverIndex.at(index).second).makeHeader(200, body.size());
 	}
 	response.append(body);
-	send(fds[i].fd, response.c_str(), response.length(), 0);
+	size_t sendMessage = send(fds[i].fd, response.c_str(), response.length(), 0);
+	if (!checkCommunication(sendMessage, i))
+		return;
 }
 
 // OTHER
@@ -383,7 +395,9 @@ void Manager::handleOther(std::string receivedData, std::vector<struct pollfd> f
 	std::string body = "Method Not Implemented";
 	response = serverList.at(serverIndex.at(index).second).makeHeader(501, body.size());
 	response.append(body);
-	send(fds[i].fd, response.c_str(), response.length(), 0);
+	size_t sendMessage = send(fds[i].fd, response.c_str(), response.length(), 0);
+	if (!checkCommunication(sendMessage, i))
+		return;
 }
 
 // Handle file upload
@@ -446,7 +460,8 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 		std::stringstream responseStream;
 		responseStream << "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 38\r\n\r\nUploading failed due to unknown reason";
 		response = responseStream.str();
-		send(fds[i].fd, response.c_str(), response.length(), 0);
+		size_t sendMessage = send(fds[i].fd, response.c_str(), response.length(), 0);
+		checkCommunication(sendMessage, i);
 		return;
 	}
 
@@ -469,7 +484,7 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 		{
 			lastBoundary = true;
 		}
-		
+
 		std::cout << "The post-boundary-data : " << receivedData.substr(end + boundary.size()) << std::endl;
 		std::string fileContent = receivedData.substr(start, end - start);
 		if (end > start)
@@ -485,59 +500,15 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	{
 		boundaries.pop_back();
 	}
-	
+
 	// Send a success response
 	std::string responsestr;
 	std::stringstream responseStream;
 	responseStream << "HTTP/1.1 200 OK\r\nContent-Length: 26\r\n\r\nFile uploaded successfully";
 	responsestr = responseStream.str();
-	send(fds[i].fd, responsestr.c_str(), responsestr.length(), 0);
-}
-
-// Handle chunked file upload
-void Manager::handleChunk(std::string receivedData, std::vector<struct pollfd> fds, int fdsIndex, int boundariesIndex)
-{
-	size_t index;
-	for (index = 0; index < serverIndex.size(); index++)
-	{
-		if (serverIndex.at(index).first == fds[fdsIndex].fd)
-			break;
-	}
-	std::ofstream theFile;
-	std::string name = boundaries.at(boundariesIndex).first;
-	std::cout << "name = " << name << std::endl;
-	theFile.open(name, std::ofstream::app);
-	if (!theFile.is_open())
-	{
-		// If file cannot be opened, send an error response
-		std::cout << "Is not open" << std::endl;
-		std::string response;
-		std::stringstream responseStream;
-		responseStream << "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 38\r\n\r\nUploading failed due to unknown reason";
-		response = responseStream.str();
-		send(fds[fdsIndex].fd, response.c_str(), response.length(), 0);
+	size_t sendMessage = send(fds[i].fd, responsestr.c_str(), responsestr.length(), 0);
+	if (!checkCommunication(sendMessage, i))
 		return;
-	}
-
-	// Append the received data to the file
-	if (receivedData.find(boundaries.at(boundariesIndex).second) != std::string::npos)
-	{
-		std::cout << "Boundary found, and is :" << std::endl;
-		std::cout << boundaries.at(boundariesIndex).second << std::endl;
-		int end = receivedData.find(boundaries.at(boundariesIndex).second) - 1;
-		int newEnd = receivedData.find_last_not_of("\r\n-", end - 1);
-		std::cout << end << " and " << newEnd << std::endl;
-		std::cout << "The char = " << receivedData.at(newEnd) << std::endl;
-		std::string usefulData = receivedData.substr(0, end);
-		// std::cerr << usefulData << std::endl;
-		theFile << usefulData;
-	}
-	else
-	{
-		std::cout << "Boundary not found" << std::endl;
-		theFile << receivedData;
-	}
-	theFile.close();
 }
 
 void Manager::handleContinue(std::string receivedData, int fdsIndex)
@@ -586,8 +557,11 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 				}
 				else
 				{
-					std::cout << "The post-boundary-data : " << receivedData.substr(dataEnd + boundaries.at(indexB).second.size()) << std::endl;
-					if (receivedData.at(dataEnd + boundaries.at(indexB).second.size()) == '-' && receivedData.at(dataEnd + boundaries.at(indexB).second.size() + 1) == '-')
+					std::string endingBoundary = boundaries.at(indexB).second + "--";
+					size_t endingBoundaryPos = receivedData.find(endingBoundary, dataEnd);
+					if (endingBoundaryPos != std::string::npos &&
+						(endingBoundaryPos + endingBoundary.size() == receivedData.size() ||
+						 receivedData.substr(endingBoundaryPos + endingBoundary.size(), 2) == "\r\n"))
 					{
 						std::cout << "Ending boundary found" << std::endl;
 						ended = true;
@@ -609,7 +583,6 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 						std::cout << "Ending boundary found" << std::endl;
 						ended = true;
 					}
-
 				}
 				receivedData = receivedData.substr(0, receivedData.find(boundaries.at(indexB).second));
 				// receivedData = receivedData.substr(0, receivedData.find_last_of("\r\n") - 1);
@@ -656,39 +629,4 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 	{
 		boundaries.erase(boundaries.begin() + indexB);
 	}
-}
-
-void Manager::handleTimeout(int fdsIndex)
-{
-	char buffer[1024];
-	int bytesReceived = recv(fds[fdsIndex].fd, buffer, sizeof(buffer), 0);
-	std::string receivedData(buffer, bytesReceived);
-	bytesReceived = recv(fds[fdsIndex].fd, buffer, sizeof(buffer), 0);
-	while (bytesReceived > 0)
-	{
-		std::string rest(buffer, bytesReceived);
-		receivedData.append(rest);
-		bytesReceived = recv(fds[fdsIndex].fd, buffer, sizeof(buffer), 0);
-	}
-	if (receivedData.find(boundaries.at(fdsIndex).second) != std::string::npos)
-	{
-		receivedData = receivedData.substr(0, receivedData.find(boundaries.at(fdsIndex).second));
-	}
-	std::string name = boundaries.at(fdsIndex).first;
-	std::ofstream theFile;
-	theFile.open(name, std::ofstream::app);
-	theFile << receivedData;
-	theFile.close();
-	size_t index;
-	for (index = 0; index < serverIndex.size(); index++)
-	{
-		if (serverIndex.at(index).first == fds[fdsIndex].fd)
-		{
-			break;
-		}
-	}
-	std::string body = "File uploaded successfully";
-	std::string response = serverList.at(serverIndex.at(index).second).makeHeader(200, body.size());
-	send(fds[fdsIndex].fd, response.c_str(), response.length(), 0);
-	// clientStates[fds[fdsIndex].fd].transferInProgress = false;
 }

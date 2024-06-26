@@ -14,7 +14,10 @@ void Manager::handleTimeout(size_t index, int k)
 	response.append(header);
 	response.append(body);
 	std::cout << "AFTER resp = \n" << response << std::endl;
-	std::cout << "Send return = " << send(fds[index].fd, response.c_str(), response.length(), 0) << std::endl;
+	size_t sendMessage = send(fds[index].fd, response.c_str(), response.length(), 0);
+	if (!checkCommunication(sendMessage, index))
+		return;
+	std::cout << "Send return = " << sendMessage << std::endl;
 	cgiOnGoing[index] = 0;
 	std::cout << "Killed at timeout" << std::endl;
 	kill(pids.at(k).first, 9);
@@ -39,7 +42,9 @@ void Manager::handleWorkDone(size_t index, int k)
 	std::string response = serverList.at(serverIndex.at(k).second).buildHTTPResponse(temp, "");
 	unlink(fullName.c_str());
 	std::cout << "Request arrived " << time(NULL) - fdsTimestamps[index] << " seconds ago" << std::endl;
-	send(fds[index].fd, response.c_str(), response.length(), 0);
+	size_t sendMessage = send(fds[index].fd, response.c_str(), response.length(), 0);
+	if (!checkCommunication(sendMessage, index))
+		return;
 	cgiOnGoing[index] = 0;
 	pids.erase(pids.begin() + k);
 }
