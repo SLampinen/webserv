@@ -70,9 +70,9 @@ public:
 
 	void handleCGI(std::string receivedData, std::vector<struct pollfd> fds, int i);
 
-    void maxBodySize(std::string receivedData, size_t i, Server &server);
+	void maxBodySize(std::string receivedData, size_t i, Server &server, std::vector<struct pollfd> fds);
 
-    void handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i);
+	void handleUpload(std::string receivedData, std::string boundary, std::vector<struct pollfd> fds, int i);
 	void handleContinue(std::string receivedData, int fdsIndex);
 };
 

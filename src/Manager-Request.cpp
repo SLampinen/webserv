@@ -133,7 +133,7 @@ void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds
 	}
 }
 
-void Manager::maxBodySize(std::string receivedData, size_t i, Server &server)
+void Manager::maxBodySize(std::string receivedData, size_t i, Server &server, std::vector<struct pollfd> fds)
 {
 	std::string contentLength = receivedData.substr(receivedData.find("Content-Length:") + 16);
 	contentLength = contentLength.substr(0, contentLength.find("\r\n"));
@@ -147,7 +147,6 @@ void Manager::maxBodySize(std::string receivedData, size_t i, Server &server)
 		response = responseStream.str();
 		size_t sendMessage = send(fds[i].fd, response.c_str(), response.length(), 0);
 		checkCommunication(sendMessage, i);
-		closeConnection(i, "Body is over max size");
 		return;
 	}
 }
@@ -167,7 +166,7 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 			break;
 		}
 	}
-	maxBodySize(receivedData, i, server);
+	maxBodySize(receivedData, i, server, fds);
 
 	if (receivedData.find("boundary") != std::string::npos)
 	{
