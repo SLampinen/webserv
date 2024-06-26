@@ -269,8 +269,6 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 		end = receivedData.find(boundary, end);
 		//boundary starts with --
 		boundary = "--" + boundary;
-		std::cerr << "Boundary = " << boundary << std::endl;
-
 		// helps at not crashing when input is chunked
 		if (end == std::string::npos)
 			end = 0;
@@ -408,7 +406,6 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 	std::string name;
 	if (end != std::string::npos && end != 0)
 		name = receivedData.substr(start, end - start);
-	// std::cerr << "THE data = " << receivedData << std::endl;
 	std::cout << "UPLOAD name[" << name << "]" << std::endl;
 	bool hasAName = true;
 	if (name.empty())
@@ -532,7 +529,6 @@ void Manager::handleChunk(std::string receivedData, std::vector<struct pollfd> f
 		std::cout << end << " and " << newEnd << std::endl;
 		std::cout << "The char = " << receivedData.at(newEnd) << std::endl;
 		std::string usefulData = receivedData.substr(0, end);
-		// std::cerr << usefulData << std::endl;
 		theFile << usefulData;
 	}
 	else
@@ -620,7 +616,6 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 			break;
 		}
 	}
-	// std::cerr << receivedData << std::endl;
 	std::cout << indexB << " and " << boundaries.size() << std::endl;
 	if (name.empty())
 	{
@@ -648,10 +643,22 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 	if (indexB < boundaryUsed.size())
 	{
 		if (boundaryUsed.at(indexB) == 1)
+		{
+			std::cout << "APPEND" << std::endl;
 			theFile.open(name, std::ofstream::app);
+		}
 		else
+		{
+			std::cout << "TRUNC" << std::endl;
 			theFile.open(name, std::ofstream::trunc);
+		}
 		boundaryUsed.at(indexB) = 1;
+	}
+	else
+	{
+		boundaryUsed.at(indexB - 1) = 1;
+			std::cout << "APPEND" << std::endl;
+		theFile.open(name, std::ofstream::app);
 	}
 	if (theFile.is_open() == 0)
 	{
