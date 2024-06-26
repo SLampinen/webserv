@@ -40,7 +40,7 @@ bool Manager::acceptNewConnections(size_t index)
 					// Add the new client socket to the poll list
 					struct pollfd clientPfd;
 					clientPfd.fd = clientFd;
-					clientPfd.events = POLLIN;
+					clientPfd.events = POLLIN | POLLOUT;
 					fds.push_back(clientPfd);
 					fdsTimestamps.push_back(time(NULL));
 					cgiOnGoing.push_back(0);

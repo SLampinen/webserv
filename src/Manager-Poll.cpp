@@ -9,7 +9,7 @@ void Manager::setupPollingforServers()
 		{
 			struct pollfd pfd;
 			pfd.fd = serverList.at(i).listeners.at(j).getServerFd();
-			pfd.events = POLLIN;
+			pfd.events = POLLIN | POLLOUT;
 			fds.push_back(pfd);
 			fdsTimestamps.push_back(2147483647);
 			cgiOnGoing.push_back(0);

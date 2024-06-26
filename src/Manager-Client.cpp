@@ -92,6 +92,8 @@ void Manager::handleClientCommunication(size_t index)
 		{
 			handleOther(receivedData, fds, index);
 		}
+		else if (receivedData.find("User-Agent: curl") != std::string::npos)
+			handleOther(receivedData, fds, index);
 		else
 		{
 			handleContinue(receivedData, index);

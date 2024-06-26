@@ -490,8 +490,12 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 	}
 	if (theFile.is_open() == 0)
 	{
-		// handle this better
-		theFile.open("www/files/turha.txt");
+		std::string body = "Can't open file";
+		std::string response = serverList.at(serverIndex.at(currentServer).second).makeHeader(500, body.size());
+		response.append(body);
+		size_t sendMessage = send(fds[fdsIndex].fd, response.c_str(), response.length(), 0);
+		if (!checkCommunication(sendMessage, currentServer))
+			return;
 	}
 	theFile << receivedData;
 	theFile.close();
@@ -503,6 +507,8 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 		std::string body = "File uploaded successfully";
 		std::string response = serverList.at(serverIndex.at(currentServer).second).makeHeader(200, body.size());
 		response.append(body);
-		send(fds[fdsIndex].fd, response.c_str(), response.length(), 0);
+		size_t sendMessage = send(fds[fdsIndex].fd, response.c_str(), response.length(), 0);
+		if (!checkCommunication(sendMessage, currentServer))
+			return;
 	}
 }
