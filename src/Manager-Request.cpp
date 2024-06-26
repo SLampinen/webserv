@@ -655,12 +655,14 @@ void Manager::handleContinue(std::string receivedData, int fdsIndex)
 	}
 	std::cout << "name of file = " << name << std::endl;
 	std::ofstream theFile;
-	std::cout << "used : " <<  boundaryUsed.at(indexB) << std::endl; 
-	if (boundaryUsed.at(indexB) == 1)
-		theFile.open(name, std::ofstream::app);
-	else
-		theFile.open(name, std::ofstream::trunc);
-	boundaryUsed.at(indexB) = 1;
+	if (indexB < boundaryUsed.size())
+	{
+		if (boundaryUsed.at(indexB) == 1)
+			theFile.open(name, std::ofstream::app);
+		else
+			theFile.open(name, std::ofstream::trunc);
+		boundaryUsed.at(indexB) = 1;
+	}
 	if (theFile.is_open() == 0)
 	{
 		std::cout << "NAME is wrong" << std::endl;
