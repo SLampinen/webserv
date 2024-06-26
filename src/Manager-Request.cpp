@@ -1,4 +1,5 @@
 #include "manager.hpp"
+#include "server.hpp"
 
 // returns the index of server whose pair is fd from given vector
 size_t getServer(std::vector<std::pair<int, size_t>> const &server_index, int fd)
@@ -132,12 +133,30 @@ void Manager::handleCGI(std::string receivedData, std::vector<struct pollfd> fds
 	}
 }
 
+void Manager::maxBodySize(std::string receivedData, size_t i, Server &server)
+{
+	std::string contentLength = receivedData.substr(receivedData.find("Content-Length:") + 16);
+	contentLength = contentLength.substr(0, contentLength.find("\r\n"));
+	size_t length = std::stoi(contentLength);
+	size_t clientBodySize = server.getClientBodySize();
+	if (length > clientBodySize)
+	{
+		std::string response;
+		std::stringstream responseStream;
+		responseStream << "HTTP/1.1 413 Payload Too Large\r\nContent-Length: 31\r\n\r\nBody size is over max body size";
+		response = responseStream.str();
+		size_t sendMessage = send(fds[i].fd, response.c_str(), response.length(), 0);
+		checkCommunication(sendMessage, i);
+		closeConnection(i, "Body is over max size");
+		return;
+	}
+}
+
 // POST
-void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fds, int i)
+void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fds, size_t i)
 {
 	Response response;
 	Server &server = prepareServer(REQ_POST, getFilePath(receivedData), fds, i, response);
-	(void)server;
 	if (prepareFailure(response.getType(), fds, i))
 		return;
 	for (size_t j = 0; j < serverIndex.size(); j++)
@@ -148,6 +167,7 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 			break;
 		}
 	}
+	maxBodySize(receivedData, i, server);
 
 	if (receivedData.find("boundary") != std::string::npos)
 	{
@@ -350,7 +370,7 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 		{
 			lastBoundary = true;
 		}
-		
+
 		std::string fileContent = receivedData.substr(start, end - start);
 		if (end > start)
 			theFile << fileContent;

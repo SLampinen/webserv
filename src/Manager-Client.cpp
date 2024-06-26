@@ -1,4 +1,5 @@
 #include "manager.hpp"
+#include "server.hpp"
 
 bool Manager::checkCommunication(int communication, size_t index)
 {
@@ -42,7 +43,7 @@ void Manager::handleClientCommunication(size_t index)
 	else
 	{
 		std::string receivedData(buffer, bytesReceived);
-		
+
 		if (receivedData.find("Expect:") != std::string::npos)
 		{
 			std::string responsestr;

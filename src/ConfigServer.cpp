@@ -34,7 +34,7 @@ void ConfigServer::initialize() {
 			previous_idx = idx;
 		}
 	}
-	if (doesLineExist("max_client_body_size", idx))
+	if (doesLineExist("client_max_body_size", idx))
 		_max_client_body_size = std::stoi(getIndexArg(idx, 1));
 }
 
