@@ -148,6 +148,7 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 			break;
 		}
 	}
+
 	if (receivedData.find("boundary") != std::string::npos)
 	{
 		std::string path;
