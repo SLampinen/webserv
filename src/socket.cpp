@@ -1,14 +1,10 @@
 #include "socket.hpp"
 
-listeningSocket::listeningSocket()
-{
-	
-}
+listeningSocket::listeningSocket() {}
+
 listeningSocket::listeningSocket(int portNum)
 {
-	std::cout << "making socket (with port num " << portNum << ")" << std::endl;
 	this->port = portNum;
-	// int addrLen = sizeof(address);
 	if ((serverFd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
 	{
 		std::cout << "ERROR, " << strerror(errno) << std::endl;
@@ -34,10 +30,7 @@ listeningSocket::listeningSocket(int portNum)
 	}
 }
 
-listeningSocket::~listeningSocket()
-{
-	std::cout << "Deleting socket portNum " << port << std::endl;
-}
+listeningSocket::~listeningSocket() {}
 
 listeningSocket::listeningSocket(const listeningSocket &var)
 {

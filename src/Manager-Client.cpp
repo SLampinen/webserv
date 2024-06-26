@@ -5,7 +5,6 @@ void Manager::closeInactiveConnections(size_t index)
 {
 	if (time(NULL) - fdsTimestamps[index] > CONNECTION_TIMEOUT)
 	{
-		std::cout << "Closing connection due to inactivity" << std::endl;
 		close(fds[index].fd);
 		fds.erase(fds.begin() + index);
 		fdsTimestamps.erase(fdsTimestamps.begin() + index);
@@ -28,11 +27,8 @@ void Manager::handleClientCommunication(size_t index)
 		index--; // Adjust index after erasing
 		return;
 	}
-	else if (bytesReceived == 0)
+	else if (bytesReceived == 0) // Connection closed by client
 	{
-		// Connection closed by client
-		std::cout << std::endl
-				  << "Client closed connection" << std::endl;
 		close(fds[index].fd);
 		fds.erase(fds.begin() + index);
 		fdsTimestamps.erase(fdsTimestamps.begin() + index);
@@ -40,9 +36,8 @@ void Manager::handleClientCommunication(size_t index)
 		index--; // Adjust index after erasing
 		return;
 	}
-	else
+	else // if request too large
 	{
-		// if request too large
 		std::string receivedData(buffer, bytesReceived);
 		bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 		while (bytesReceived > 0)
@@ -66,19 +61,6 @@ void Manager::handleClientCommunication(size_t index)
 				bytesReceived = recv(fds[index].fd, buffer, sizeof(buffer), 0);
 			}
 		}
-		// if (receivedData.find("Expect:") != std::string::npos)
-		// {
-		// 	std::string response = "HTTP/1.1 413 Request Entity Too Large\r\n\r\n";
-		// 	send(fds[index].fd, response.c_str(), response.size(), 0);
-		// 	std::cout << "File too big" << std::endl;
-		// 	close(fds[index].fd);
-		// 	fds.erase(fds.begin() + index);
-		// 	fdsTimestamps.erase(fdsTimestamps.begin() + index);
-		// 	cgiOnGoing.erase(cgiOnGoing.begin() + index);
-		// 	index--;
-		// 	return;
-		// }
-
 		// If cgi is ongoing, throw out previous request, start new one if necessary
 		fdsTimestamps[index] = time(NULL);
 		cgiOnGoing[index] = 0;
@@ -97,17 +79,14 @@ void Manager::handleClientCommunication(size_t index)
 		}
 		if (receivedData.find("GET") != std::string::npos)
 		{
-			std::cout << "GETTING" << std::endl;
 			handleGet(receivedData, fds, index);
 		}
 		else if (receivedData.find("POST") != std::string::npos)
 		{
-			std::cout << "POSTING" << std::endl;
 			handlePost(receivedData, fds, index);
 		}
 		else if (receivedData.find("DELETE") != std::string::npos)
 		{
-			std::cout << "DELETING" << std::endl;
 			handleDelete(receivedData, fds, index);
 		}
 		else if ((receivedData.find("HEAD") != std::string::npos || receivedData.find("PUT") != std::string::npos ||
@@ -115,12 +94,10 @@ void Manager::handleClientCommunication(size_t index)
 				 receivedData.find("TRACE") != std::string::npos || receivedData.find("PATCH") != std::string::npos) &&
 				 receivedData.find("Content-Type:") == std::string::npos)
 		{
-			std::cout << "OTHER METHOD" << std::endl;
 			handleOther(receivedData, fds, index);
 		}
 		else
 		{
-			std::cout << "CONT" << std::endl;
 			handleContinue(receivedData, index);
 		}
 	}

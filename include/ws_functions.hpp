@@ -28,13 +28,10 @@ inline bool ws_checkword(const std::string &s, const std::vector<std::string> &l
 
 // checks if word is found in vector, searches only until first char in vector elem is not uppercase
 inline bool ws_checkword_lower(const std::string &s, const std::vector<std::string> &list, size_t &index) {
-	//std::cout << "ws_cw_l: " << s << std::endl;
 	for (index = 0; index < list.size() && !std::isupper(list.at(index).at(0)); index++) {
-		std::cout << "ws_cw_l iterating elem: " << ws_getword(list.at(index)) << " find result: " << s.find(ws_getword(list.at(index))) << std::endl;
 		if (s.find(ws_getword(list.at(index))) == 0)
 			return true;
 	}
-	return (std::cout << "ws_cw_l returning false" << std::endl, false);
 	return false;
 }
 
@@ -42,7 +39,6 @@ inline bool ws_checkword_lower(const std::string &s, const std::vector<std::stri
 	if (!(start + 1 < list.size()))
 		return false;
 	std::vector<std::string> sub_list(list.begin() + 1 + start, list.end()); // ! removed + 1
-	std::cout << "ws_cw_l sublist begin: " << sub_list.at(0) << std::endl;
 	if (ws_checkword_lower(s, sub_list, index))
 		return (index += start, true);
 	return false;
@@ -129,7 +125,6 @@ inline std::string ws_getargstr(size_t num, const std::string &s) {
 		if (num == 0) return arg;
 		else arg = "";
 	}
-	std::cout << std::endl << "ws_getargstr end, pos: " << pos << std::endl;
 	return "";
 }
 

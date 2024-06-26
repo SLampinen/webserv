@@ -2,38 +2,7 @@
 
 Manager::Manager() : default_responses("DefaultResponses") {}
 
-Manager::~Manager() {
-	//for (ConfigServer &csrv : configserverList) csrv.getNumOfPorts();
-	//for (Server &srv : serverList) srv.getNumOfPorts();
-}
-
-// Manager::Manager(const Manager &var)
-// {
-// 	this->pids = var.pids;
-// 	this->serverList = var.serverList;
-// 	this->serverIndex = var.serverIndex;
-// 	this->fds = var.fds;
-// 	this->cgiOnGoing = var.cgiOnGoing;
-// 	this->fdsTimestamps = var.fdsTimestamps;
-
-// 	this->boundaries = var.boundaries;
-// }
-
-// Manager &Manager::operator=(const Manager &var)
-// {
-// 	if (this != &var)
-// 	{
-// 		this->pids = var.pids;
-// 		this->serverList = var.serverList;
-// 		this->serverIndex = var.serverIndex;
-// 		this->fds = var.fds;
-// 		this->cgiOnGoing = var.cgiOnGoing;
-// 		this->fdsTimestamps = var.fdsTimestamps;
-	
-// 		this->boundaries = var.boundaries;
-// 	}
-// 	return (*this);
-// }
+Manager::~Manager() {}
 
 void setNonBlocking(int sockfd)
 {
@@ -50,7 +19,6 @@ bool Manager::acceptNewConnections(size_t index)
 		{
 			if (fds[index].fd == serverList.at(j).listeners.at(k).getServerFd())
 			{
-				std::cout << "new connection" << std::endl;
 				while (true)
 				{
 					struct sockaddr_in clientAddr;
@@ -65,7 +33,6 @@ bool Manager::acceptNewConnections(size_t index)
 						}
 						else
 						{
-							std::cerr << "Accept error: " << strerror(errno) << std::endl;
 							break;
 						}
 					}
@@ -78,7 +45,6 @@ bool Manager::acceptNewConnections(size_t index)
 					fdsTimestamps.push_back(time(NULL));
 					cgiOnGoing.push_back(0);
 					serverIndex.push_back(std::make_pair(clientFd, j));
-					std::cout << "here, i, j, k are " << index << " " << j << " " << k << std::endl;
 				}
 				return true; // Return true as soon as a new connection is accepted
 			}
@@ -90,17 +56,9 @@ bool Manager::acceptNewConnections(size_t index)
 // Run
 void Manager::run(std::string configFile)
 {
-	std::cout << "opening config file: " << configFile << std::endl;
 	ConfigParser config_parse(configFile);
-
 	readConfig(config_parse);
-	std::cerr << "----------" << std::endl << "Boundaries size : " << boundaries.size() << std::endl << "----------" << std::endl;
-	std::cerr << "Timestamps size : " << fdsTimestamps.size() << std::endl;
-	std::cout << "--------------------------------------------------" << std::endl
-			  << "number of servers = " << serverList.size() << std::endl;
-
 	setupPollingforServers();
-	
 	while (true)
 	{
 		handlePolling();

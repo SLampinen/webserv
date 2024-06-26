@@ -11,7 +11,6 @@
 class Server {
 private:
 	int numOfPorts;
-	//std::vector<int> ports;
 	std::string servName;
 	std::string rootDir;
 	std::string error404Dir;
@@ -24,20 +23,15 @@ private:
 	ConfigServer csrv;
 	ConfigSection &def_res;
 
-	//Server(const Server &var);
 public:
-	//Server();
 	~Server();
 	Server(ConfigServer &cfg_server, ConfigSection &def_res);
-	//Server& operator=(const Server &var);
 
-	void setLocation(Location &loc); // changes values to match the current requests location // ! added by rleskine
-
+	void setLocation(Location &loc);
 	std::string makeStatus(int status);
 	std::string makeHeader(int responseStatus, int responseSize);
 	std::string buildHTTPResponse(std::string fileName, std::string fileExt);
 
-	//Not used at the moment
 	std::string getMIMEType(std::string fileExt);
 
 	std::string getServerName(void);
@@ -46,12 +40,11 @@ public:
 	int getNumOfPorts(void);
 	size_t getClientBodySize(void);
 	std::string getRootDir(void);
-	bool methodAllowed(size_t method); // 1GET 2POST 3DEL
+	bool methodAllowed(size_t method);
 
 	void makeSocketList(void);
 
 	void log(std::string text);
-	void print(void);
 
 	std::vector<listeningSocket> listeners;
 

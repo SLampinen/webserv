@@ -5,7 +5,6 @@ void Manager::setupPollingforServers()
 {
 	for (size_t i = 0; i < serverList.size(); i++)
 	{
-		serverList.at(i).print();
 		for (int j = 0; j < serverList.at(i).getNumOfPorts(); j++)
 		{
 			struct pollfd pfd;
@@ -48,7 +47,6 @@ void Manager::handlePolling()
 		return;
 	}
 
-	std::cout << "new round " << std::endl;
 	for (size_t index = 0; index < fds.size(); index++)
 	{
 		handlePollEvent(index);

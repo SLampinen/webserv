@@ -89,7 +89,6 @@ Response ConfigServer::resolveRequest(const Request &request) {
 bool ConfigServer::resolveLocation(int const method, std::string const &request_path, size_t &index) {
 	size_t match_size = 0, new_match_size = 0;
 	for (size_t i = 0; i < _locations.size(); i++) {
-		//std::cout << "matching locations: [" << request_path << "][" << _locations.at(i)._path << "]" << std::endl;
 		if (_locations.at(i).requestMatch(method, request_path, new_match_size) && new_match_size > match_size) {
 			match_size = new_match_size;
 			index = i;
@@ -127,36 +126,13 @@ std::string ConfigServer::getName() const {
 	return _server_names.at(0); 
 	}
 size_t ConfigServer::getSize() const { return _max_client_body_size; }
-size_t ConfigServer::getNumOfPorts() const { //std::cout << "BREAK getNOP [" << std::to_string(_ports.size()) << "]" << std::endl; 
+
+size_t ConfigServer::getNumOfPorts() const {
 	return _ports.size(); }
+
 bool ConfigServer::isThereLocationMatch() { return (_last_matched_location != std::string::npos); }
+
 // unsafe, check with isThereLocationMatch first
 Location &ConfigServer::getMatchedLocation() { return _locations.at(_last_matched_location); }
+
 int ConfigServer::getPort(size_t index) { return _ports.at(index); }
-
-void ConfigServer::printData() {
-	std::cout << "\e[0;32mConfigServer.printData() : Ports \e[0;92m";
-	for (size_t const &port : _ports)
-		std::cout << "[" << port << "]";
-	std::cout << "\e[0;32m" << std::endl;
-	if (_server_names.size() > 0) std::cout << "Server name: \e[0;92m";
-	for (const std::string &s : _server_names)
-		std::cout << "[" << s << "]";
-	if (_server_names.size() > 0) std::cout << "\e[0;32m" << std::endl;
-	if (_error_pages.size() > 0) std::cout << "Error pages:" << std::endl;
-	if (_max_client_body_size > 0) std::cout << "Max client body size: " << _max_client_body_size << std::endl;
-	for (const std::pair<const size_t, std::string> &p : _error_pages)
-		std::cout << p.first << ":" << p.second << std::endl;
-	for (Location &loc : _locations)
-		loc.printData();
-	std::cout << "\e[0m";
-}
-
-std::string const ConfigServer::printId() const {
-	std::string id("");
-	if (!_server_names.empty())
-		id.append(_server_names.at(0));
-	for (size_t const &p : _ports)
-		id.append(":" + std::to_string(p));
-	return id;
-}

@@ -73,10 +73,6 @@ void ConfigReference::checkLine(std::vector<std::string> line) {
 	if (line.at(1) == "}") return;
 	if (!keyExists(line.at(0), line.at(1), idx))
 		throw ConfigReferenceException("Syntax keyword not found: " + line.at(1));
-	for (std::string const &s : line)
-		std::cout << "[" << s << "]";
-	std::cout << std::endl;
-	//std::cout << "REFCHECK:[" << line << "] argsize" << line.size() << std::endl;
 	if (_references.at(idx).back().size() == 1 && line.size() != _references.at(idx).size())
 		throw ConfigReferenceException("Argument count does not match at keyword: " + line.at(1));
 	for (size_t i = 2; keyParamType(idx, i - 2) && (i < _references.at(idx).size() || i < line.size()); i++) {

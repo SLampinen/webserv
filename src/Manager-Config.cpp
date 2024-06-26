@@ -23,9 +23,7 @@ int Manager::readConfig(ConfigParser &config_parser)
 		return (std::cout << "READCONFIG FAILED" << std::endl, 0);
 	while (!config_parser.endParse()) {
 		configserverList.push_back(config_parser.getServer());
-		std::cout << "PRINT FROM READCONFIG";
 		serverList.push_back(Server(configserverList.back(), default_responses));
-		serverList.back().print();
 		serverList.back().makeSocketList();
 	}
 	return 1;
