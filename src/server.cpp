@@ -154,8 +154,7 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 
 void setnonblocking(int sockfd)
 {
-	int flags = fcntl(sockfd, F_GETFL, 0);
-	fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+	fcntl(sockfd, F_SETFL, O_NONBLOCK);
 }
 
 void Server::log(std::string text)
