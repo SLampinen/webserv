@@ -531,16 +531,16 @@ void Manager::handleChunk(std::string receivedData, std::vector<struct pollfd> f
 
 void Manager::handleContinue(std::string receivedData, int fdsIndex)
 {
-	Response cresponse;
-	Server &server = prepareServer("/", fds, fdsIndex, cresponse);
-	(void)server;
+	// Response cresponse;
+	// Server &server = prepareServer("/", fds, fdsIndex, cresponse);
+	// (void)server;
 	size_t currentServer;
 	for (currentServer = 0; currentServer < serverIndex.size(); currentServer++)
 	{
 		if (serverIndex.at(currentServer).first == fds[fdsIndex].fd)
 		{
 			// std::cout << receivedData << std::endl;
-			serverList.at(serverIndex.at(j).second).log("handleContinue" + receivedData);
+			serverList.at(serverIndex.at(currentServer).second).log("handleContinue" + receivedData);
 			break;
 		}
 	}
