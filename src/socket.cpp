@@ -7,7 +7,7 @@ listeningSocket::listeningSocket(int portNum)
 	this->port = portNum;
 	if ((serverFd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
 	{
-		std::cout << "ERROR, " << strerror(errno) << std::endl;
+		std::cerr << "Port " << portNum << ": ERROR, " << strerror(errno) << std::endl;
 		return ;
 	}
 	address.sin_family = AF_INET;
@@ -20,12 +20,12 @@ listeningSocket::listeningSocket(int portNum)
 
 	if (bind(serverFd, (struct sockaddr*)&address, sizeof(address)) < 0)
 	{
-		std::cout << "ERROR, " << strerror(errno) << std::endl;
+		std::cerr << "Port " << portNum << ": ERROR, " << strerror(errno) << std::endl;
 		return ;
 	}
 	if (listen(serverFd, 10) < 0)
 	{
-		std::cout << "ERROR, " << strerror(errno) << std::endl;
+		std::cerr << "Port " << portNum << ": ERROR, " << strerror(errno) << std::endl;
 		return ;
 	}
 }

@@ -20,9 +20,15 @@ int Manager::readConfig(ConfigParser &config_parser)
 {
 	readDefaultResponses(default_responses);
 	if (!config_parser.startParse())
-		return (std::cout << "READCONFIG FAILED" << std::endl, 0);
+		return (std::cerr << "Failed to parse configuration file" << std::endl, 0);
 	while (!config_parser.endParse()) {
-		configserverList.push_back(config_parser.getServer());
+		ConfigServer config_server(config_parser.getServer());
+		for (ConfigServer &existing_server : configserverList) {
+			for (size_t index = 0; index < config_server.getNumOfPorts(); index++)
+				if (existing_server.matchPort(config_server.getPort(index)))
+					return (std::cerr << "Duplicate ports specified in different servers!" << std::endl, 0);
+		}
+		configserverList.push_back(config_server);
 		serverList.push_back(Server(configserverList.back(), default_responses));
 		serverList.back().makeSocketList();
 	}

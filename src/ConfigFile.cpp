@@ -34,7 +34,7 @@ bool ConfigFile::processLine() {
 	std::string word;
 	while (!ws_endl(_line, pos) && ws_wspace(_line.at(pos)))
 		pos++;
-	if (ws_endl(_line, pos) || !(_line.at(pos) == '}' || ws_keyword_char(_line.at(pos)))) { std::cout << "BREAK:[" << _line << "]" << std::endl;
+	if (ws_endl(_line, pos) || !(_line.at(pos) == '}' || ws_keyword_char(_line.at(pos)))) {
 		throw ConfigFileException("Invalid character found at beginning of configuration line");
 	}
 	if (_line.at(pos) == '}' && ++pos) {

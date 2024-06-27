@@ -16,7 +16,6 @@ void Manager::handleTimeout(size_t index, int k)
 	size_t sendMessage = send(fds[index].fd, response.c_str(), response.length(), 0);
 	if (!checkCommunication(sendMessage, index))
 		return;
-	std::cout << "Send return = " << sendMessage << std::endl;
 	cgiOnGoing[index] = 0;
 	kill(pids.at(k).first, 9);
 	pids.erase(pids.begin() + k);
