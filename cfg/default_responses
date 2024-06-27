@@ -4,6 +4,7 @@
 202 Accepted
 203 Non-Authoritative Information
 300 Multiple Choices
+302 Found
 400 Bad Request
 403 Forbidden
 404 Not Found

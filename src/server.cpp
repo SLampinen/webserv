@@ -88,7 +88,6 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	std::string buffer;
 	std::stringstream responseStream;
 
-	std::cout << "buildHTTPresponse:[" << fileName << "][" << fileExt << "]" << std::endl;
 	// if empty, aka front page
 	if (false && fileName.empty())
 	{
@@ -145,7 +144,6 @@ std::string Server::buildHTTPResponse(std::string fileName, std::string fileExt)
 	fileFull.append(rootDir);
 	fileFull.append(fileName);
 	fileFull.append(fileExt);
-	std::cout << "buildHTTPresponse:[" << fileFull << "]" << std::endl;
 	open(fileFull.data(), O_RDONLY);
 	std::ifstream file(fileFull);
 	if (file.is_open() == 0)

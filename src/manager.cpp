@@ -56,7 +56,8 @@ bool Manager::acceptNewConnections(size_t index)
 void Manager::run(std::string configFile)
 {
 	ConfigParser config_parse(configFile);
-	readConfig(config_parse);
+	if (readConfig(config_parse) == 0)
+		return;
 	setupPollingforServers();
 	while (true)
 	{

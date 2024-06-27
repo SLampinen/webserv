@@ -44,7 +44,6 @@ Server &Manager::prepareServer(int const method, std::string file_path, std::vec
 // resolves 404 and 405 if location did not match (thus server doesn't have necessary information and fails)
 bool Manager::prepareFailure(Response const &response, std::vector<struct pollfd> fds, int i)
 {
-	std::cout << "prepFail called with code " << response.getType() << std::endl;
 	if (response.getType() != 404 && response.getType() != 405 && response.getType() != 302)
 		return false;
 	Server &server = serverList.at(serverIndex.at(getServer(serverIndex, fds[i].fd)).second);
@@ -66,8 +65,6 @@ void Manager::handleGet(std::string request_data, std::vector<struct pollfd> fds
 		return;
 	if (response.getType() == RES_CGI)
 		return (handleCGI(request_data, fds, i));
-	//if (server.dirIndexAllowed() && response.getPath().back() == '/')
-	std::cout << "resp.getPath:" << response.getPath() << std::endl << "httpresponse called with: " << response.getPath().substr(server.getRootDir().size(), std::string::npos);
 	std::string response_data(server.buildHTTPResponse(response.getPath().substr(server.getRootDir().size(), std::string::npos), ""));
 	size_t sendMessage = send(fds[i].fd, response_data.c_str(), response_data.length(), 0);
 	if (!checkCommunication(sendMessage, i))
@@ -187,7 +184,7 @@ void Manager::handlePost(std::string receivedData, std::vector<struct pollfd> fd
 		end = receivedData.find(boundary, end);
 		// boundary starts with --
 		boundary = "--" + boundary;
-		std::cerr << "Boundary = " << boundary << std::endl;
+		//std::cerr << "Boundary = " << boundary << std::endl;
 
 		// helps at not crashing when input is chunked
 		if (end == std::string::npos)
