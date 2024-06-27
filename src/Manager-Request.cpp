@@ -358,6 +358,16 @@ void Manager::handleUpload(std::string receivedData, std::string boundary, std::
 			size_t sendMessage = send(fds[i].fd, response.c_str(), response.length(), 0);
 			checkCommunication(sendMessage, i);
 		}
+		if (receivedData.find(boundary + "--") != std::string::npos)
+		{
+			std::string response;
+			std::stringstream responseStream;
+			responseStream << "HTTP/1.1 400 Bad Request\r\nContent-Length: 45\r\n\r\nTrying to upload file without choosing a file";
+			response = responseStream.str();
+			size_t sendMessage = send(fds[i].fd, response.c_str(), response.length(), 0);
+			checkCommunication(sendMessage, i);
+		}
+		
 		return;
 	}
 
